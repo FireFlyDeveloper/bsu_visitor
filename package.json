@@ -1,0 +1,19 @@
+{
+  "name": "bsu_visitor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd client && npm run dev",
+    "dev": "concurrently npm:backend npm:frontend",
+    "seed": "cd backend && node src/database/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
