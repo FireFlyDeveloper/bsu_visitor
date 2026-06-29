@@ -10,6 +10,22 @@ class VisitorLinkController {
         return res.status(404).json({ error: "Link not found" });
       }
 
+      // Reject links whose underlying visit has ended (the known bug:
+      // "QR code still showing after status is left").
+      if (link.visit_time_out) {
+        return res.status(410).json({
+          error: "This visitor link has expired — the visit has ended.",
+        });
+      }
+      if (
+        link.visit_status &&
+        ["completed", "rejected", "cancelled"].includes(link.visit_status)
+      ) {
+        return res.status(410).json({
+          error: `This visitor link is no longer valid (status: ${link.visit_status}).`,
+        });
+      }
+
       const visitor = {
         id: link.visitor_id,
         fullname: link.visitor_name,
@@ -28,6 +44,7 @@ class VisitorLinkController {
       res.json({
         visitor,
         office,
+        visit_status: link.visit_status || "pending",
         created_at: link.created_at,
         expires_in_seconds: 28800,
       });

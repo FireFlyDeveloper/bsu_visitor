@@ -45,7 +45,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useUserStore } from '../store/user.js'
+import { useUserStore } from '@/store/user.js'
 
 const userStore = useUserStore()
 const fullname = ref('')

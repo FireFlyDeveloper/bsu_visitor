@@ -1,0 +1,156 @@
+# BSU Visitor Management System
+
+A role-based campus visitor management platform for **Batangas State University (BSU)**.
+Manages visitor registration, per-office queueing, QR-coded visitor access links, and
+real-time status tracking for **admin**, **staff**, **security guards**, and **visitors**.
+
+> Forked from [sadassu/bsu_visitor](https://github.com/sadassu/bsu_visitor) (June 2026) and
+> re-published under [FireFlyDeveloper/bsu_visitor](https://github.com/FireFlyDeveloper/bsu_visitor).
+
+---
+
+## Stack
+
+| Layer       | Tech                                                                   |
+|-------------|------------------------------------------------------------------------|
+| Frontend    | Vue 3 + Pinia + Vue Router + Tailwind CSS v4 + Vite 8                  |
+| Backend     | Node.js + Express 5 + Helmet + JWT + bcrypt + Multer                   |
+| Database    | SQLite (`better-sqlite3`)                                              |
+| Auth        | JWT in httpOnly cookies + role-based middleware                        |
+| Roles       | `admin` · `staff` · `security`                                         |
+| File upload | Multer (disk) → `/uploads`                                             |
+
+---
+
+## Quick start
+
+### 1. Install
+```bash
+npm install              # root: concurrently only
+(cd backend && npm install)
+(cd client && npm install)
+```
+
+### 2. Configure environment
+```bash
+cp backend/.env.example backend/.env
+cp client/.env.example client/.env
+```
+Edit `backend/.env` to set a real `JWT_SECRET` and your `CLIENT_URL`
+(comma-separated if you need multiple origins, e.g. local + ngrok).
+Edit `client/.env` only if you need a non-localhost proxy target or allowed host.
+
+### 3. Seed the database
+```bash
+npm run seed             # creates admin/admin123 + 3 demo offices
+```
+
+### 4. Run dev
+```bash
+npm run dev              # starts backend :8000 and frontend :5173 concurrently
+```
+
+Default login: **admin / admin123** — change it immediately.
+
+---
+
+## Project layout
+
+```
+bsu_visitor/
+├── backend/
+│   ├── src/
+│   │   ├── server.js              # Express bootstrap + CORS + routes
+│   │   ├── controllers/           # 8 route handlers
+│   │   ├── models/                # 7 SQLite-backed data classes
+│   │   ├── routes/                # 8 Express routers
+│   │   ├── middleware/            # auth, upload, activity logger
+│   │   └── database/              # schema + seed (auto-runs on boot)
+│   ├── uploads/                   # visitor photos (gitignored)
+│   └── .env.example
+├── client/
+│   ├── src/
+│   │   ├── views/                 # 4 role groups: Admin, Staff, Guard, Visitor
+│   │   ├── store/                 # Pinia stores
+│   │   ├── router/                # role-gated routes
+│   │   ├── components/
+│   │   └── middleware/            # auth + role guards
+│   ├── vite.config.js
+│   └── .env.example
+└── doc/
+    ├── known_issues.md            # historical bug list (mostly resolved)
+    └── visit_logs.md              # API design notes
+```
+
+---
+
+## API surface
+
+| Method | Path                                          | Role          | Purpose |
+|--------|-----------------------------------------------|---------------|---------|
+| POST   | `/api/users/login`                            | public        | Issue JWT cookie |
+| POST   | `/api/users/logout`                           | public        | Clear cookie |
+| GET    | `/api/users/me`                               | any auth      | Current user |
+| GET    | `/api/users`                                  | admin         | List users |
+| POST   | `/api/users`                                  | admin         | Create user |
+| GET    | `/api/visitors`                               | any auth      | List / search visitors |
+| POST   | `/api/visitors`                               | any auth      | Create visitor (multipart) |
+| POST   | `/api/visit-logs/register`                    | any auth      | Register visit + issue QR link |
+| GET    | `/api/visit-logs`                             | admin         | All logs (filterable, paginated) |
+| GET    | `/api/visit-logs/pending`                     | staff         | Pending in my offices |
+| GET    | `/api/visit-logs/counts`                      | any auth      | Visits per office |
+| PATCH  | `/api/visit-logs/:id/status`                  | staff/admin   | Update visit status (auto time_out on completed) |
+| PATCH  | `/api/visit-logs/office/:id/status`           | admin         | Bulk update by office |
+| GET    | `/api/visit-logs/status/:status`              | staff         | Filter by status |
+| GET    | `/api/visit-logs/office/:id/status-count`     | any auth      | Status breakdown |
+| GET    | `/api/visitor-links`                          | any auth      | Active QR links only |
+| GET    | `/api/visitor-links/:token`                   | public        | Resolve token → visit (410 if ended) |
+| GET    | `/api/offices`                                | any auth      | List offices |
+| POST   | `/api/offices`                                | admin         | Create office |
+| GET    | `/api/roles`                                  | any auth      | List roles |
+| PATCH  | `/api/security-guard/office/:id/status`       | security      | Set office open/closed |
+| **GET**| **`/api/security-guard/visitors/active`**     | **security**  | **Visitors still on campus** (time_out IS NULL) |
+
+---
+
+## Bug fixes vs. upstream
+
+| # | Bug | Fix |
+|---|-----|-----|
+| 1 | `VisitorController.create` read `img` from `req.body` — silently dropped uploaded photos | Read from `req.file`, fall back to `req.body.img` |
+| 2 | `vite.config.js` hardcoded `http://192.168.1.5:8000` proxy | `VITE_API_PROXY_TARGET` env var, defaults to localhost |
+| 3 | `vite.config.js` hardcoded ngrok host in `allowedHosts` | `VITE_ALLOWED_HOSTS` env var (comma-separated) |
+| 4 | `cors()` hardcoded `intussusceptive-skimpily-ona.ngrok-free.dev` | Replaced with allowlist function reading `CLIENT_URL` (comma-separated) |
+| 5 | `GET /api/visitor-links` returned every QR ever issued — known bug "QR code still showing after status is left" | Joins `visit_logs` and filters to `time_out IS NULL AND status NOT IN (terminal)` |
+| 6 | `GET /api/visitor-links/:token` did not reject expired links | Returns **410 Gone** when underlying visit has ended |
+| 7 | `UserController.create` required `office_id` for **all** roles via `requiresOffice()` | Only `staff` (role_id 3) requires it; `admin` and `security` are exempt |
+| 8 | No minimum password length check | Reject passwords shorter than 6 chars |
+| 9 | `/api/security-guard/visitors/active` missing (called for in `doc/visit_logs.md`) | Implemented using `VisitLog.findActiveVisits`, enriches with visitor + office names |
+| 10 | `/admin/register` route missing — `Register.vue` was orphaned | Route + lazy import added |
+| 11 | Dead `ar.js` dependency in `client/package.json` (not imported anywhere) | Removed |
+
+---
+
+## Configuration reference
+
+### `backend/.env`
+| Key | Default | Notes |
+|-----|---------|-------|
+| `PORT` | `8000` | Express listen port |
+| `NODE_ENV` | `development` | `production` enables `secure` cookie flag |
+| `JWT_SECRET` | `your-super-secret-…` | **Change in production** |
+| `JWT_EXPIRY` | `24h` | Any `ms`/`jsonwebtoken`-compatible string |
+| `CLIENT_URL` | `http://localhost:3000` | Comma-separated CORS allowlist |
+
+### `client/.env`
+| Key | Default | Notes |
+|-----|---------|-------|
+| `VITE_API_BASE` | `/api` | Sent on every fetch. Use full URL in production. |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Vite dev proxy target |
+| `VITE_ALLOWED_HOSTS` | `localhost` | Comma-separated dev-server allowed hosts (for ngrok etc.) |
+
+---
+
+## License
+
+ISC (per upstream).

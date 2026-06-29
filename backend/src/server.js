@@ -19,12 +19,24 @@ const app = express();
 
 // Middleware
 app.use(helmet());
+
+// CORS — comma-separated allowlist via CLIENT_URL.
+// Examples:
+//   CLIENT_URL=http://localhost:3000
+//   CLIENT_URL=http://localhost:3000,https://my-tunnel.ngrok-free.app
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL,
-      "intussusceptive-skimpily-ona.ngrok-free.dev",
-    ],
+    origin: (origin, cb) => {
+      // Allow same-origin / curl / server-to-server (no Origin header)
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
   }),
 );

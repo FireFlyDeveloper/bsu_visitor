@@ -3,13 +3,19 @@ import Visitor from "../models/Visitor.js";
 class VisitorController {
   static create(req, res) {
     try {
-      const { fullname, contact_number, address, id_type, img } = req.body;
+      const { fullname, contact_number, address, id_type } = req.body;
 
       if (!fullname || !contact_number || !address) {
         return res.status(400).json({
           error: "fullname, contact_number, and address are required",
         });
       }
+
+      // Photo comes from multer (req.file) when uploaded via multipart/form-data.
+      // Fall back to req.body.img for JSON clients that send a URL/path.
+      const img = req.file
+        ? `uploads/${req.file.filename}`
+        : (req.body.img ?? null);
 
       const visitorId = Visitor.create({
         fullname,

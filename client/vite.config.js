@@ -13,16 +13,23 @@ export default defineConfig({
   },
 
   server: {
-    allowedHosts: ["intussusceptive-skimpily-ona.ngrok-free.dev"],
+    // Comma-separated list. Set in client/.env:  VITE_ALLOWED_HOSTS=foo.ngrok-free.dev,bar.ngrok-free.app
+    allowedHosts: (
+      process.env.VITE_ALLOWED_HOSTS || "localhost"
+    )
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean),
     host: "0.0.0.0",
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://192.168.1.5:8000",
+        // Override in client/.env:  VITE_API_PROXY_TARGET=http://192.168.1.5:8000
+        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:8000",
         changeOrigin: true,
       },
       "/uploads": {
-        target: "http://192.168.1.5:8000",
+        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:8000",
         changeOrigin: true,
       },
     },

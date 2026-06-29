@@ -156,12 +156,20 @@ class UserController {
       }
 
       if (
-        UserController.requiresOffice(normalizedRoleId) &&
+        // Only staff (role_id 3) is required to have an office.
+        // Admins and security may or may not have an office.
+        normalizedRoleId === 3 &&
         !normalizedOfficeId
       ) {
         return res
           .status(400)
-          .json({ error: "office_id is required for visitors" });
+          .json({ error: "office_id is required for staff accounts" });
+      }
+
+      if (String(password).length < 6) {
+        return res
+          .status(400)
+          .json({ error: "Password must be at least 6 characters" });
       }
 
       const existingUser = User.findByUsername(username);

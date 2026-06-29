@@ -4,8 +4,9 @@ import LoginPage from "../views/AuthPages/LoginPage.vue";
 import CreateVisitor from "../views/VisitorPages/CreateVisitor.vue";
 import VisitorLogs from "../views/VisitorPages/VisitorLogs.vue";
 import VisitorAccess from "../views/VisitorPages/VisitorAccess.vue";
-import AdminDashboard from "../views/AdminPages/dashboard.vue";
+import AdminDashboard from "../views/AdminPages/Dashboard.vue";
 import UserList from "../views/AdminPages/UserList.vue";
+import Register from "../views/AdminPages/Register.vue";
 import AdminLayout from "../layouts/AdminLayout.vue";
 import HomePage from "../views/HomePage.vue";
 
@@ -68,6 +69,13 @@ const routes = [
         path: "users", // relative path
         name: "UserList",
         component: UserList,
+        meta: { requiresAuth: true },
+        beforeEnter: roleMiddleware("admin"),
+      },
+      {
+        path: "register",
+        name: "AdminRegister",
+        component: Register,
         meta: { requiresAuth: true },
         beforeEnter: roleMiddleware("admin"),
       },
