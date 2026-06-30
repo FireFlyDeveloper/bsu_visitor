@@ -1,199 +1,236 @@
 <template>
   <nav
-    class="flex items-center justify-between bg-white px-7 py-2 shadow-lg sticky top-0 z-50 border-b-amber-300 border-b-2 transition-transform duration-300"
-    :class="{ '-translate-y-full': !isVisible }"
+    class="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--paper)]/85 backdrop-blur-md transition-shadow"
+    :class="{ 'shadow-[0_1px_0_var(--line)]': scrolled }"
   >
-    <!-- LEFT LOGO -->
-    <div class="flex items-center shrink-0">
-      <router-link to="/" class="block">
-        <div
-          class="w-16 h-16 md:w-20 md:h-20 lg:w-25 lg:h-25 flex items-center justify-center"
+    <div
+      class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
+    >
+      <!-- Brand -->
+      <router-link
+        to="/"
+        class="flex items-center gap-2.5"
+        aria-label="BSU Visitor home"
+      >
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--brand)] text-white shadow-sm"
         >
-          <img
-            src="/logo/BatStateU-NEU-Logo-1-300x282.png"
-            alt="BatStateU Logo"
-            class="max-w-full max-h-full"
-          />
+          <svg
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          >
+            <path d="M4 7h16M12 7v13M7 20h10" />
+          </svg>
+        </span>
+        <div class="hidden sm:block">
+          <p
+            class="font-display text-[0.95rem] font-bold leading-tight tracking-tight text-[var(--ink)]"
+          >
+            BSU Visitor
+          </p>
+          <p class="text-[0.6875rem] font-medium text-[var(--ink-3)]">
+            Batangas State University
+          </p>
         </div>
       </router-link>
-    </div>
 
-    <!-- MOBILE HAMBURGER -->
-    <div class="flex items-center md:hidden">
-      <button
-        @click="isMenuOpen = !isMenuOpen"
-        class="p-2 rounded-md border border-gray-300 hover:bg-gray-100 transition"
-      >
-        <span class="text-2xl">☰</span>
-      </button>
-    </div>
+      <!-- Center nav (desktop) -->
+      <div class="hidden flex-1 justify-center md:flex">
+        <div class="flex items-center gap-1">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :to="item.path"
+            class="group relative px-3 py-1.5 text-sm font-medium tracking-wide text-[var(--ink-2)] transition-colors hover:text-[var(--ink)]"
+            active-class="text-[var(--brand)]"
+            exact-active-class="text-[var(--brand)]"
+          >
+            {{ item.name }}
+            <span
+              class="absolute inset-x-3 -bottom-0.5 h-0.5 origin-left scale-x-0 rounded-full bg-[var(--brand)] transition-transform duration-300 group-hover:scale-x-100"
+              :class="{ 'scale-x-100': isActive(item.path) }"
+            />
+          </router-link>
+        </div>
+      </div>
 
-    <!-- DESKTOP NAV -->
-    <div class="hidden md:flex items-center gap-1 md:gap-2">
-      <router-link
-        v-for="item in navItems"
-        :key="item.path"
-        :to="item.path"
-        class="nav-link px-3 py-1 md:px-5 md:py-2 uppercase font-semibold text-xs md:text-sm tracking-wide hover:bg-yellow-400/10 transition-all duration-200"
-        active-class="text-amber-700 font-bold border-b-1 border-red-700"
-        exact-active-class="text-amber-700 font-bold border-b-1 border-red-700"
-      >
-        {{ item.name }}
-      </router-link>
-    </div>
-
-    <!-- RIGHT LOGO -->
-    <div class="flex items-center shrink-0 hidden md:flex">
-      <div
-        class="w-16 h-16 md:w-20 md:h-20 lg:w-25 lg:h-25 bg-white/5 flex items-center justify-center"
-      >
-        <img
-          src="/logo/BAGONG_PILIPINAS_LOGO-e1693281031955.png"
-          alt=""
-          class="max-w-full max-h-full"
-        />
+      <!-- Right: user + mobile menu -->
+      <div class="flex items-center gap-2">
+        <div
+          v-if="userStore.currentUser"
+          class="hidden items-center gap-2 sm:flex"
+        >
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--paper-2)] text-xs font-semibold text-[var(--ink-2)]"
+          >
+            {{ initials }}
+          </div>
+          <div class="hidden text-right lg:block">
+            <p class="text-xs font-semibold text-[var(--ink)]">
+              {{ userStore.currentUser.fullname || userStore.currentUser.username }}
+            </p>
+            <p class="text-[0.6875rem] capitalize text-[var(--ink-3)]">
+              {{ userStore.currentUser.role || roleKey }}
+            </p>
+          </div>
+          <button
+            class="btn btn-ghost btn-sm"
+            @click="onLogout"
+            aria-label="Sign out"
+          >
+            Sign out
+          </button>
+        </div>
+        <button
+          class="rounded-lg p-2 text-[var(--ink-2)] hover:bg-[var(--paper-2)] md:hidden"
+          @click="mobileOpen = !mobileOpen"
+          aria-label="Toggle menu"
+        >
+          <svg
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+          >
+            <path
+              v-if="!mobileOpen"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+            <path v-else stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
-  </nav>
 
-  <!-- MOBILE MENU -->
-  <div
-    v-if="isMenuOpen"
-    class="md:hidden bg-white shadow-lg border-t border-gray-200 px-4 py-3"
-  >
-    <div class="flex flex-col gap-2">
-      <router-link
-        v-for="item in navItems"
-        :key="item.path"
-        :to="item.path"
-        class="px-3 py-2 rounded font-semibold text-sm bg-yellow-100 hover:bg-yellow-200"
-        active-class="text-amber-700 font-bold bg-yellow-200"
-        exact-active-class="text-amber-700 font-bold bg-yellow-200"
-        @click="isMenuOpen = false"
+    <!-- Mobile menu -->
+    <Transition name="slide-down">
+      <div
+        v-if="mobileOpen"
+        class="border-t border-[var(--line)] bg-white px-4 py-3 md:hidden"
       >
-        {{ item.name }}
-      </router-link>
-    </div>
-  </div>
+        <div class="flex flex-col gap-1">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :to="item.path"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-[var(--ink-2)] hover:bg-[var(--paper-2)]"
+            active-class="bg-[var(--brand-soft)] text-[var(--brand)]"
+            exact-active-class="bg-[var(--brand-soft)] text-[var(--brand)]"
+            @click="mobileOpen = false"
+          >
+            {{ item.name }}
+          </router-link>
+          <button
+            v-if="userStore.currentUser"
+            class="btn btn-secondary mt-2"
+            @click="onLogout"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </nav>
 </template>
 
-<script>
-import { useUserStore } from "../store/user.js";
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "@/store/user.js";
 
-export default {
-  name: "Navbar",
+const userStore = useUserStore();
+const route = useRoute();
+const router = useRouter();
 
-  data() {
-    return {
-      isVisible: true,
-      lastScrollTop: 0,
-      isMenuOpen: false,
+const mobileOpen = ref(false);
+const scrolled = ref(false);
 
-      // NAVIGATION DICTIONARY
-      navigation: {
-        null: [{ name: "Login", path: "/login" }],
-
-        admin: [
-          { name: "Availability", path: "/" },
-          { name: "Visitor Log", path: "/visitors/logs" },
-          { name: "QR Codes", path: "/qr-code" },
-          { name: "Admin Dashboard", path: "/admin/dashboard" },
-        ],
-
-        staff: [
-          { name: "Availability", path: "/" },
-          { name: "Visitor Log", path: "/visitors/logs" },
-          { name: "QR Codes", path: "/qr-code" },
-          { name: "Staff Dashboard", path: "/staff/dashboard" },
-        ],
-
-        security: [
-          { name: "Kiosk", path: "/security/kiosk" },
-          { name: "Availability", path: "/" },
-          { name: "Visitor Log", path: "/visitors/logs" },
-          { name: "QR Codes", path: "/qr-code" },
-          { name: "Security Panel", path: "/security/visitors/status" },
-        ],
-      },
-    };
-  },
-
-  computed: {
-    userStore() {
-      return useUserStore();
-    },
-
-    roleKey() {
-      const role = this.userStore.userRole;
-
-      if (role === 1) return "admin";
-      if (role === 2) return "security";
-      if (role === 3) return "staff";
-
-      return null;
-    },
-
-    navItems() {
-      return this.navigation[this.roleKey] || [];
-    },
-  },
-
-  mounted() {
-    window.addEventListener("scroll", this.handleScroll);
-
-    if (!this.userStore.currentUser) {
-      this.userStore.fetchCurrentUser();
-    }
-  },
-
-  beforeUnmount() {
-    window.removeEventListener("scroll", this.handleScroll);
-  },
-
-  methods: {
-    handleScroll() {
-      const currentScrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
-
-      if (currentScrollTop > this.lastScrollTop && currentScrollTop > 100) {
-        this.isVisible = false;
-      } else {
-        this.isVisible = true;
-      }
-
-      this.lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
-    },
-  },
+const navigation = {
+  null: [{ name: "Sign in", path: "/login" }],
+  admin: [
+    { name: "Availability", path: "/" },
+    { name: "Visitor Log", path: "/visitors/logs" },
+    { name: "QR Codes", path: "/qr-code" },
+    { name: "Admin Dashboard", path: "/admin/dashboard" },
+  ],
+  staff: [
+    { name: "Availability", path: "/" },
+    { name: "Visitor Log", path: "/visitors/logs" },
+    { name: "QR Codes", path: "/qr-code" },
+    { name: "Staff Dashboard", path: "/staff/dashboard" },
+  ],
+  security: [
+    { name: "Kiosk", path: "/security/kiosk" },
+    { name: "Availability", path: "/" },
+    { name: "Visitor Log", path: "/visitors/logs" },
+    { name: "QR Codes", path: "/qr-code" },
+    { name: "Security Panel", path: "/security/visitors/status" },
+  ],
 };
+
+const roleKey = computed(() => {
+  const r = userStore.userRole;
+  if (r === 1) return "admin";
+  if (r === 2) return "security";
+  if (r === 3) return "staff";
+  return null;
+});
+
+const navItems = computed(() => navigation[roleKey.value] || []);
+
+const initials = computed(() => {
+  const u = userStore.currentUser;
+  if (!u) return "·";
+  const src = u.fullname || u.username || "";
+  return src
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0].toUpperCase())
+    .join("") || "·";
+});
+
+function isActive(path) {
+  if (path === "/") return route.path === "/";
+  return route.path === path || route.path.startsWith(path + "/");
+}
+
+function onLogout() {
+  userStore.logout();
+  router.push("/login");
+}
+
+function onScroll() {
+  scrolled.value = window.scrollY > 8;
+}
+
+onMounted(() => {
+  window.addEventListener("scroll", onScroll, { passive: true });
+  if (!userStore.currentUser) {
+    userStore.fetchCurrentUser();
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", onScroll);
+});
 </script>
 
 <style scoped>
-.nav-link {
-  position: relative;
-  overflow: visible;
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.nav-link::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 0;
-  height: 2px;
-  background-color: #8c2910;
-  transition:
-    width 0.25s ease,
-    left 0.25s ease;
-}
-
-.nav-link:hover::after {
-  width: 100%;
-  left: 0;
-}
-
-.nav-link.router-link-active::after,
-.nav-link.router-link-exact-active::after {
-  width: 100%;
-  left: 0;
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

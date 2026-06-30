@@ -1,19 +1,66 @@
 ﻿@import "tailwindcss";
 
+/* ----------------------------------------------------------------
+   Design tokens — Editorial Civic
+   Single source of truth for the entire client app.
+   ---------------------------------------------------------------- */
 :root {
   color-scheme: light;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Typography */
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Color — single accent, off-white surface, deep charcoal text */
+  --ink: #0f172a;            /* neutral-900 */
+  --ink-2: #334155;          /* slate-700 */
+  --ink-3: #64748b;          /* slate-500 */
+  --paper: #fafaf7;          /* off-white */
+  --paper-2: #f1efea;        /* warm stone */
+  --paper-3: #e7e4dc;
+  --line: #e6e3da;           /* warm border */
+  --brand: #8c1d0e;          /* single BSU red, deepened */
+  --brand-soft: #f6e7e3;
+  --accent: #b45309;         /* amber-700, used sparingly for highlights */
+  --good: #166534;           /* emerald-800 */
+  --bad: #991b1b;            /* red-800 */
+  --warn: #92400e;           /* amber-800 */
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+
+  /* Shadow — single tinted, slate-tinted */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px -8px rgba(15, 23, 42, 0.08);
+  --shadow-2: 0 2px 4px rgba(15, 23, 42, 0.05),
+    0 16px 40px -12px rgba(15, 23, 42, 0.12);
+
+  /* Easing */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Font family */
+  font-family: var(--font-body);
 }
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-feature-settings: "cv11", "ss01";
+  text-rendering: optimizeLegibility;
 }
 
 #app {
@@ -22,4 +69,250 @@ body {
 
 a {
   color: inherit;
+}
+
+/* ----------------------------------------------------------------
+   Editorial typography defaults
+   ---------------------------------------------------------------- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--ink);
+}
+
+h1 { font-size: clamp(1.75rem, 2.5vw + 1rem, 2.75rem); line-height: 1.05; }
+h2 { font-size: clamp(1.375rem, 1.5vw + 0.75rem, 1.875rem); line-height: 1.15; }
+h3 { font-size: 1.25rem; line-height: 1.25; }
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.lede {
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 65ch;
+}
+
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------------
+   Surface utility — single shadow, no double borders
+   ---------------------------------------------------------------- */
+.surface {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
+
+.surface-raised {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+}
+
+.surface-flat {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+/* ----------------------------------------------------------------
+   Buttons — soft-skill motion
+   ---------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 200ms var(--ease-out-soft),
+    background-color 200ms var(--ease-out-soft),
+    box-shadow 200ms var(--ease-out-soft),
+    color 200ms var(--ease-out-soft);
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--brand);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(140, 29, 14, 0.25);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--paper-2);
+  border-color: var(--paper-3);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-2);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--paper-2);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--bad);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) {
+  background: #7f1d1d;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: var(--good);
+  color: #fff;
+}
+.btn-success:hover:not(:disabled) {
+  background: #14532d;
+  transform: translateY(-1px);
+}
+
+.btn-sm { height: 2rem; padding: 0 0.75rem; font-size: 0.8125rem; }
+.btn-lg { height: 3rem; padding: 0 1.5rem; font-size: 1rem; }
+.btn-block { width: 100%; }
+
+/* ----------------------------------------------------------------
+   Input — single style
+   ---------------------------------------------------------------- */
+.input, .select, .textarea {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 0.875rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  transition: border-color 200ms var(--ease-out-soft),
+    box-shadow 200ms var(--ease-out-soft);
+  outline: none;
+  font-family: var(--font-body);
+}
+.textarea { height: auto; min-height: 5rem; padding: 0.625rem 0.875rem; }
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(140, 29, 14, 0.12);
+}
+.input::placeholder, .textarea::placeholder {
+  color: var(--ink-3);
+}
+
+.label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 0.375rem;
+  letter-spacing: 0.01em;
+}
+
+/* ----------------------------------------------------------------
+   Skeleton
+   ---------------------------------------------------------------- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--paper-2) 0%,
+    var(--paper-3) 50%,
+    var(--paper-2) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--r-sm);
+  animation: skeleton-shimmer 1.4s infinite linear;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ----------------------------------------------------------------
+   Subtle paper grain — page-wide, pointer-events none
+   ---------------------------------------------------------------- */
+.grain {
+  position: relative;
+}
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+}
+
+/* ----------------------------------------------------------------
+   Entry motion — used by useStagger
+   ---------------------------------------------------------------- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise {
+  animation: rise 500ms var(--ease-out-soft) both;
+}
+.rise-delay-1 { animation-delay: 60ms; }
+.rise-delay-2 { animation-delay: 120ms; }
+.rise-delay-3 { animation-delay: 180ms; }
+.rise-delay-4 { animation-delay: 240ms; }
+.rise-delay-5 { animation-delay: 300ms; }
+.rise-delay-6 { animation-delay: 360ms; }
+.rise-delay-7 { animation-delay: 420ms; }
+.rise-delay-8 { animation-delay: 480ms; }
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.pulse-soft { animation: pulse-soft 2s var(--ease-out-soft) infinite; }
+
+/* ----------------------------------------------------------------
+   Focus ring for keyboard users (accessibility)
+   ---------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

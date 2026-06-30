@@ -1,191 +1,198 @@
 <template>
   <Navbar />
-  <div class="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-5xl space-y-6">
+  <div class="grain min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <!-- Header -->
-      <section
-        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg"
-      >
-        <div
-          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-        >
-          <div>
-            <p
-              class="text-sm font-semibold uppercase tracking-[0.28em] text-red-700"
-            >
-              Guard House
-            </p>
-            <h1 class="mt-2 text-3xl font-bold text-slate-900">Visitor Kiosk</h1>
-            <p class="mt-1 text-sm text-slate-500">
-              Register a visitor at the school entrance. The destination office
-              will see them in their dashboard.
-            </p>
-          </div>
-          <div
-            v-if="overdueCount > 0"
-            class="inline-flex items-center gap-2 rounded-full bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 ring-2 ring-rose-200 animate-pulse"
-          >
-            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-            {{ overdueCount }} visitor{{ overdueCount === 1 ? "" : "s" }} need
-            sign-out
-          </div>
+      <header class="rise mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="eyebrow">Guard house</p>
+          <h1 class="mt-2 text-4xl font-bold tracking-tight">Visitor kiosk</h1>
+          <p class="lede mt-2 max-w-xl">
+            Register a visitor at the school entrance. The destination office
+            will see them in their dashboard immediately.
+          </p>
         </div>
-      </section>
+        <div
+          v-if="overdueCount > 0"
+          class="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 pulse-soft"
+        >
+          <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+          {{ overdueCount }} visitor{{ overdueCount === 1 ? "" : "s" }} need sign-out
+        </div>
+      </header>
 
-      <!-- Form -->
-      <section
-        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg"
-      >
-        <form @submit.prevent="onSubmit" class="space-y-6">
-          <div class="grid gap-6 sm:grid-cols-2">
+      <!-- 2-col layout -->
+      <div class="grid gap-6 lg:grid-cols-12">
+        <!-- Form (col-span-7) -->
+        <section class="surface rise lg:col-span-7 p-6 lg:p-8">
+          <form @submit.prevent="onSubmit" class="space-y-5">
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label class="label" for="fullname">Full name *</label>
+                <input id="fullname" v-model="fullname" type="text" required class="input" />
+              </div>
+              <div>
+                <label class="label" for="contact">Contact number *</label>
+                <input id="contact" v-model="contact_number" type="tel" required class="input" />
+              </div>
+            </div>
+
             <div>
-              <label class="block text-sm font-medium text-slate-700"
-                >Full name *</label
-              >
+              <label class="label" for="address">Address *</label>
+              <textarea id="address" v-model="address" rows="2" required class="textarea"></textarea>
+            </div>
+
+            <div class="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label class="label" for="office">Destination office *</label>
+                <select id="office" v-model="office_id" required class="select">
+                  <option value="">Select office</option>
+                  <option v-for="o in offices" :key="o.id" :value="o.id">
+                    {{ o.office_name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="purpose">Purpose</label>
+                <input id="purpose" v-model="purpose" type="text" class="input" placeholder="Inquiry, delivery, meeting…" />
+              </div>
+            </div>
+
+            <div>
+              <label class="label" for="photo">Visitor photo *</label>
               <input
-                v-model="fullname"
-                type="text"
+                id="photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
                 required
-                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+                @change="onFile"
+                class="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--ink)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+              />
+              <img
+                v-if="imgPreview"
+                :src="imgPreview"
+                alt="Photo preview"
+                class="mt-4 h-48 w-full rounded-2xl object-cover border border-[var(--line)]"
               />
             </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700"
-                >Contact number *</label
-              >
-              <input
-                v-model="contact_number"
-                type="tel"
-                required
-                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700"
-              >Address *</label
-            >
-            <textarea
-              v-model="address"
-              rows="2"
-              required
-              class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-            ></textarea>
-          </div>
-
-          <div class="grid gap-6 sm:grid-cols-2">
-            <div>
-              <label class="block text-sm font-medium text-slate-700"
-                >Destination office *</label
-              >
-              <select
-                v-model="office_id"
-                required
-                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-              >
-                <option value="">Select office</option>
-                <option v-for="o in offices" :key="o.id" :value="o.id">
-                  {{ o.office_name }}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-slate-700"
-                >Purpose</label
-              >
-              <input
-                v-model="purpose"
-                type="text"
-                placeholder="e.g. inquiry, delivery, meeting"
-                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-700"
-              >Visitor photo *</label
-            >
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              required
-              @change="onFile"
-              class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm shadow-sm file:mr-3 file:rounded-full file:border-0 file:bg-red-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-            />
-            <img
-              v-if="imgPreview"
-              :src="imgPreview"
-              class="mt-4 h-48 w-full rounded-3xl object-cover border border-slate-200"
-              alt="Photo preview"
-            />
-          </div>
-
-          <div
-            v-if="error"
-            class="rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-          >
-            {{ error }}
-          </div>
-
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full rounded-3xl bg-red-800 px-6 py-4 text-base font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {{ loading ? "Logging visitor..." : "Log visitor" }}
-          </button>
-        </form>
-      </section>
-
-      <!-- Overdue sign-out panel -->
-      <section
-        v-if="overdue.length"
-        class="rounded-3xl border-2 border-rose-200 bg-rose-50 p-6 shadow-lg"
-      >
-        <h2 class="text-lg font-bold text-rose-700">
-          Pending sign-out ({{ overdue.length }})
-        </h2>
-        <p class="mt-1 text-sm text-rose-600">
-          These visitors have been marked done by their office. Tap "Sign Out"
-          when they leave the guard house.
-        </p>
-        <ul class="mt-4 space-y-3">
-          <li
-            v-for="log in overdue"
-            :key="log.id"
-            class="flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm"
-          >
-            <img
-              v-if="log.visitor_img"
-              :src="`/${log.visitor_img}`"
-              class="h-14 w-14 rounded-full object-cover"
-            />
             <div
+              v-if="error"
+              class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+            >
+              {{ error }}
+            </div>
+
+            <AppButton type="submit" :loading="loading" block size="lg">
+              {{ loading ? "Logging visitor…" : "Log visitor" }}
+            </AppButton>
+          </form>
+        </section>
+
+        <!-- Live activity feed (col-span-5) -->
+        <section class="space-y-4 lg:col-span-5">
+          <!-- Overdue (sticky) -->
+          <div
+            v-if="overdue.length"
+            class="surface-raised p-6 ring-1 ring-rose-200 rise"
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="eyebrow text-rose-700">Pending sign-out</p>
+                <p class="font-display mt-1 text-2xl font-bold tabular">
+                  {{ overdue.length }}
+                </p>
+              </div>
+              <span class="h-2.5 w-2.5 rounded-full bg-rose-500 pulse-soft"></span>
+            </div>
+            <ul class="mt-4 space-y-2">
+              <li
+                v-for="(log, i) in overdue"
+                :key="log.id"
+                :class="stagger(i)"
+                class="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-white p-2.5"
+              >
+                <img
+                  v-if="log.visitor_img"
+                  :src="`/${log.visitor_img}`"
+                  class="h-10 w-10 rounded-full object-cover"
+                />
+                <div
+                  v-else
+                  class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--paper-2)] text-sm font-semibold text-[var(--ink-2)]"
+                >
+                  {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold">{{ log.visitor_name }}</p>
+                  <p class="truncate text-xs text-[var(--ink-3)]">
+                    {{ log.office_name }} · {{ formatTime(log.time_out) }}
+                  </p>
+                </div>
+                <button
+                  class="btn btn-danger btn-sm"
+                  :disabled="signingOut === log.id"
+                  @click="onSignOut(log)"
+                >
+                  {{ signingOut === log.id ? "…" : "Sign out" }}
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Recent registrations (live) -->
+          <div class="surface p-6 rise rise-delay-1">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="eyebrow">Live feed</p>
+                <p class="mt-1 text-xs text-[var(--ink-3)]">
+                  Recent kiosk registrations
+                </p>
+              </div>
+              <span class="flex items-center gap-1.5 text-xs text-[var(--ink-3)]">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 pulse-soft"></span>
+                Auto-refresh
+              </span>
+            </div>
+            <ul v-if="recentActivity.length" class="mt-4 space-y-2">
+              <li
+                v-for="(log, i) in recentActivity"
+                :key="log.id"
+                :class="stagger(i)"
+                class="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-white p-2.5"
+              >
+                <img
+                  v-if="log.visitor_img"
+                  :src="`/${log.visitor_img}`"
+                  class="h-9 w-9 rounded-full object-cover"
+                />
+                <div
+                  v-else
+                  class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--paper-2)] text-xs font-semibold text-[var(--ink-2)]"
+                >
+                  {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-semibold">{{ log.visitor_name }}</p>
+                  <p class="truncate text-xs text-[var(--ink-3)]">
+                    {{ log.office_name }} · {{ log.purpose || "—" }}
+                  </p>
+                </div>
+                <span class="shrink-0 font-mono text-[0.6875rem] tabular text-[var(--ink-3)]">
+                  {{ formatTime(log.time_in) }}
+                </span>
+              </li>
+            </ul>
+            <EmptyState
               v-else
-              class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-500"
-            >
-              {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="font-semibold text-slate-900">{{ log.visitor_name }}</p>
-              <p class="text-xs text-slate-500">
-                {{ log.office_name }} · marked done
-                {{ formatTime(log.time_out) }}
-              </p>
-            </div>
-            <button
-              @click="onSignOut(log)"
-              :disabled="signingOut === log.id"
-              class="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
-            >
-              {{ signingOut === log.id ? "..." : "Sign out" }}
-            </button>
-          </li>
-        </ul>
-      </section>
+              icon="spark"
+              title="No registrations yet"
+              description="Once you log a visitor, it will appear here in real time."
+            />
+          </div>
+        </section>
+      </div>
     </div>
 
     <KioskSuccessModal
@@ -201,11 +208,16 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useOfficeStore } from "@/store/office.js";
 import { useVisitorLogStore } from "@/store/visitorLog.js";
+import { useToast } from "@/composables/useToast";
 import Navbar from "@/components/Navbar.vue";
+import AppButton from "@/components/AppButton.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import KioskSuccessModal from "@/components/KioskSuccessModal.vue";
+import { stagger } from "@/composables/useStagger";
 
 const officeStore = useOfficeStore();
 const visitorLogStore = useVisitorLogStore();
+const toast = useToast();
 
 const offices = ref([]);
 const fullname = ref("");
@@ -224,6 +236,7 @@ const successMessage = ref("");
 const overdue = ref([]);
 const overdueCount = computed(() => overdue.value.length);
 const signingOut = ref(null);
+const recentActivity = ref([]);
 
 let pollHandle = null;
 let alarmAudio = null;
@@ -276,6 +289,8 @@ async function onSubmit() {
       office?.office_name || "office"
     }.`;
     showSuccess.value = true;
+    toast.success(`Logged ${result.visitor.fullname}`);
+    await pollAll();
   } catch (err) {
     error.value = err?.message || "Failed to log visitor";
   } finally {
@@ -287,14 +302,17 @@ function closeSuccess() {
   showSuccess.value = false;
   resetForm();
 }
-
 function registerAnother() {
   closeSuccess();
 }
 
-async function pollOverdue() {
-  const data = await visitorLogStore.fetchOverdue();
-  overdue.value = data.overdue || [];
+async function pollAll() {
+  const [overdueRes, activityRes] = await Promise.all([
+    visitorLogStore.fetchOverdue(),
+    visitorLogStore.fetchVisitLogs({ perPage: 8, page: 1 }),
+  ]);
+  overdue.value = overdueRes.overdue || [];
+  recentActivity.value = (activityRes.logs || []).slice(0, 8);
   updateAlarm();
 }
 
@@ -314,9 +332,10 @@ async function onSignOut(log) {
   signingOut.value = log.id;
   try {
     await visitorLogStore.signOutVisitor(log.id);
-    await pollOverdue();
+    toast.success(`${log.visitor_name} signed out`);
+    await pollAll();
   } catch (err) {
-    error.value = err?.message || "Sign-out failed";
+    toast.error(err?.message || "Sign-out failed");
   } finally {
     signingOut.value = null;
   }
@@ -326,15 +345,15 @@ function formatTime(value) {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString();
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 onMounted(async () => {
   await fetchOffices();
   alarmAudio = new Audio("/alarm.mp3");
   alarmAudio.loop = true;
-  await pollOverdue();
-  pollHandle = setInterval(pollOverdue, 5000);
+  await pollAll();
+  pollHandle = setInterval(pollAll, 5000);
 });
 
 onUnmounted(() => {
