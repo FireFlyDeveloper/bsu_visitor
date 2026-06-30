@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS visit_logs (
     status TEXT,
     time_in DATETIME DEFAULT CURRENT_TIMESTAMP,
     time_out DATETIME,
+    left_at DATETIME,
     logged_by INTEGER,
 
     FOREIGN KEY (visitor_id) REFERENCES visitors(id) ON DELETE CASCADE,
