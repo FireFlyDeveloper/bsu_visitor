@@ -234,6 +234,56 @@ class VisitLog {
     return { rows, total };
   }
 
+  static markDone(id) {
+    const stmt = db.prepare(`
+      UPDATE visit_logs
+      SET status = 'completed',
+          time_out = COALESCE(time_out, CURRENT_TIMESTAMP)
+      WHERE id = ? AND status != 'completed'
+    `);
+    const result = stmt.run(id);
+    return result.changes > 0;
+  }
+
+  static markLeft(id) {
+    const stmt = db.prepare(`
+      UPDATE visit_logs
+      SET left_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND left_at IS NULL
+    `);
+    const result = stmt.run(id);
+    return result.changes > 0;
+  }
+
+  static findOverdue({ limit = 50 } = {}) {
+    return db
+      .prepare(
+        `
+      SELECT
+        l.id,
+        l.visitor_id,
+        l.office_id,
+        l.purpose,
+        l.status,
+        l.time_in,
+        l.time_out,
+        l.left_at,
+        v.fullname AS visitor_name,
+        v.contact_number,
+        v.img AS visitor_img,
+        o.office_name
+      FROM visit_logs l
+      JOIN visitors v ON v.id = l.visitor_id
+      JOIN offices o ON o.id = l.office_id
+      WHERE l.status = 'completed'
+        AND l.left_at IS NULL
+      ORDER BY l.time_out DESC
+      LIMIT ?
+    `,
+      )
+      .all(limit);
+  }
+
   // This method is for staff users to quickly view pending visits related to their assigned offices
   static findPendingByUserOffice({ userId, limit = 20, offset = 0 }) {
     if (!userId) {
