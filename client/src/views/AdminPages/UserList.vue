@@ -1,153 +1,107 @@
 <template>
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
-    <p class="text-gray-800 mt-2">View all users and their last activity</p>
-  </div>
+  <Navbar />
+  <div class="grain min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+    <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8 space-y-6">
+      <header class="rise flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="eyebrow">People</p>
+          <h1 class="mt-2 text-4xl font-bold tracking-tight">User management</h1>
+          <p class="lede mt-2">
+            All accounts in the system. Create admins, security, and staff.
+          </p>
+        </div>
+        <AppButton variant="primary" @click="showCreateUser = true">
+          Create user
+        </AppButton>
+      </header>
 
-  <div v-if="userStore.loading" class="flex justify-center items-center h-64">
-    <div
-      class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-800"
-    ></div>
-  </div>
+      <div v-if="userStore.loading && !userStore.users.length" class="surface p-6 space-y-2">
+        <Skeleton v-for="i in 5" :key="i" height="48" />
+      </div>
 
-  <div
-    v-if="userStore.error"
-    class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded"
-  >
-    {{ userStore.error }}
-  </div>
+      <div v-else-if="!userStore.users.length">
+        <EmptyState
+          icon="users"
+          title="No users yet"
+          description="Create your first account to get started."
+        />
+      </div>
 
-  <button
-    @click="showCreateUser = true"
-    class="bg-red-800 text-white px-4 py-2 rounded-xl"
-  >
-    Create User
-  </button>
-
-  <BaseModal v-model="showCreateUser">
-    <template #header>
-      <h2 class="text-xl font-semibold">Create User Account</h2>
-    </template>
-
-    <CreateUserForm @created="handleUserCreated" />
-  </BaseModal>
-
-  <div
-    v-if="!userStore.loading && userStore.users.length > 0"
-    class="bg-white rounded-lg shadow overflow-hidden"
-  >
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="bg-gray-100 border-b border-gray-200">
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
+      <section v-else class="surface overflow-hidden rise rise-delay-1">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b border-[var(--line)] bg-[var(--paper-2)]/40 text-left text-[0.6875rem] uppercase tracking-wider text-[var(--ink-3)]">
+              <th class="px-6 py-3 font-semibold">Name</th>
+              <th class="px-6 py-3 font-semibold">Username</th>
+              <th class="px-6 py-3 font-semibold">Role</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--line)]">
+            <tr
+              v-for="(user, i) in userStore.users"
+              :key="user.id"
+              :class="stagger(i)"
+              class="transition-colors hover:bg-[var(--paper-2)]/40"
             >
-              ID
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-            >
-              Full Name
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-            >
-              Username
-            </th>
-            <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-            >
-              Role
-            </th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <tr
-            v-for="user in userStore.users"
-            :key="user.id"
-            class="hover:bg-gray-50 transition-colors"
-          >
-            <td
-              class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-            >
-              {{ user.id }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-              {{ user.fullname }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-              {{ user.username }}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <span
-                :class="getRoleClass(user.role_id)"
-                class="px-3 py-1 rounded-full text-xs font-medium"
-              >
-                {{ getRoleName(user.role_id) }}
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <td class="px-6 py-4">
+                <p class="font-semibold">{{ user.fullname }}</p>
+              </td>
+              <td class="px-6 py-4 font-mono text-xs tabular text-[var(--ink-2)]">
+                {{ user.username }}
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                  :class="roleTone(user.role_id)"
+                >
+                  {{ roleName(user.role_id) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="border-t border-[var(--line)] px-6 py-3 text-xs text-[var(--ink-3)]">
+          Total: <span class="font-semibold text-[var(--ink)] tabular">{{ userStore.users.length }}</span>
+        </div>
+      </section>
+
+      <BaseModal v-model="showCreateUser">
+        <template #header>
+          <h2 class="font-display text-xl font-bold">Create user account</h2>
+        </template>
+        <CreateUserForm @created="handleUserCreated" />
+      </BaseModal>
     </div>
-  </div>
-
-  <div
-    v-if="!userStore.loading && userStore.users.length === 0"
-    class="bg-white rounded-lg shadow p-8 text-center"
-  >
-    <p class="text-gray-500 text-lg">No users found</p>
-  </div>
-
-  <div
-    v-if="!userStore.loading && userStore.users.length > 0"
-    class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200"
-  >
-    <p class="text-blue-900">
-      Total users:
-      <span class="text-blue-800">{{ userStore.users.length }}</span>
-    </p>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { onMounted } from "vue";
-import BaseModal from "../../components/BaseModal.vue";
-import CreateUserForm from "../../components/CreateAccountForm.vue";
-import { useUserStore } from "../../store/user.js";
+import { ref, onMounted } from "vue";
+import Navbar from "@/components/Navbar.vue";
+import BaseModal from "@/components/BaseModal.vue";
+import CreateUserForm from "@/components/CreateAccountForm.vue";
+import AppButton from "@/components/AppButton.vue";
+import Skeleton from "@/components/Skeleton.vue";
+import EmptyState from "@/components/EmptyState.vue";
+import { useUserStore } from "@/store/user.js";
+import { stagger } from "@/composables/useStagger";
 
 const userStore = useUserStore();
 const showCreateUser = ref(false);
 
-const roleMap = {
-  1: "Admin",
-  2: "Security",
-  3: "Staff",
+const roleMap = { 1: "Admin", 2: "Security", 3: "Staff" };
+const roleToneMap = {
+  1: "bg-rose-50 text-rose-700",
+  2: "bg-sky-50 text-sky-700",
+  3: "bg-emerald-50 text-emerald-700",
 };
-
-onMounted(() => {
-  userStore.fetchAllUsers();
-});
+const roleName = (id) => roleMap[id] || "Unknown";
+const roleTone = (id) => roleToneMap[id] || "bg-[var(--paper-2)] text-[var(--ink-2)]";
 
 async function handleUserCreated() {
   await userStore.fetchAllUsers();
   showCreateUser.value = false;
 }
 
-
-function getRoleName(roleId) {
-  return roleMap[roleId] || "Unknown";
-}
-
-function getRoleClass(roleId) {
-  return (
-    {
-      1: "bg-red-100 text-red-800",
-      2: "bg-blue-100 text-blue-800",
-      3: "bg-green-100 text-green-800",
-    }[roleId] || "bg-gray-100 text-gray-800"
-  );
-}
+onMounted(() => userStore.fetchAllUsers());
 </script>
