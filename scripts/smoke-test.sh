@@ -2,14 +2,14 @@
 # scripts/smoke-test.sh
 #
 # End-to-end API smoke test for the BSU Visitor backend.
-# Wipes the DB, seeds it, starts the server, runs 30 endpoint tests, tears down.
+# Wipes the DB, seeds it, starts the server, runs endpoint tests, tears down.
 #
 # Usage:  npm run test:api        (from project root)
 #         bash scripts/smoke-test.sh
 #
 # Override the port with PORT=8000 npm run test:api
 set -u
-BASE="http://localhost:${PORT:-8765}"
+BASE="http://localhost:${PORT:-8000}"
 JAR=/tmp/bsu-admin.jar
 SECJAR=/tmp/bsu-sec.jar
 STJAR=/tmp/bsu-staff.jar
@@ -27,7 +27,6 @@ T() {
   if [[ -n "$data" ]]; then
     if [[ "$data" == @* ]]; then
       local rest="${data#@}"
-      # NONIMAGE marker => upload README.md (non-image) to test fileFilter rejection
       if [[ "$rest" == *NONIMAGE* ]]; then
         args+=(-F "img=@/root/tmp/bsu_visitor/README.md")
         rest="${rest%&NONIMAGE*}"
@@ -106,6 +105,52 @@ T "staff -> create user (forbidden)" 403 POST /api/users '{"fullname":"X","usern
 T "staff -> security route (forbidden)" 403 GET /api/security-guard/visitors/active "" "$STJAR"
 T "staff -> offices (allowed)" 200 GET /api/offices "" "$STJAR"
 T "staff -> visit-logs (allowed)" 200 GET /api/visit-logs "" "$STJAR"
+
+echo
+echo "=== Phase 7: Kiosk + office done + guard sign-out + overdue ==="
+
+# Kiosk register: must have photo + address + office
+T "kiosk register (sec1, with photo)" 201 POST /api/security-guard/kiosk/register "@fullname=KioskTest&contact_number=09179999999&address=Test&office_id=1&purpose=Inquiry" "$SECJAR"
+KID=$(jget /tmp/_body '["logId"]')
+echo "Kiosk logId = $KID"
+
+# Kiosk register missing required fields
+T "kiosk register missing fields" 400 POST /api/security-guard/kiosk/register '{"contact_number":"0917"}' "$SECJAR"
+T "kiosk register no photo" 400 POST /api/security-guard/kiosk/register '{"fullname":"X","contact_number":"0917","address":"X","office_id":1}' "$SECJAR"
+
+# Kiosk forbidden for non-security
+T "non-sec kiosk (forbidden)" 403 POST /api/security-guard/kiosk/register '{"fullname":"X","contact_number":"0917","address":"X","office_id":1}' "$STJAR"
+
+# Overdue list before mark-done (visit 1 is already completed; should appear)
+T "overdue list contains visit 1" 200 GET /api/visit-logs/overdue '' "$SECJAR"
+# Verify the JSON has at least 1 entry
+OVERDUE_TOTAL=$(jget /tmp/_body '["total"]')
+if [[ "$OVERDUE_TOTAL" -lt 1 ]]; then
+  FAIL=$((FAIL+1))
+  ROWS+=("| overdue list has rows | GET /api/visit-logs/overdue | >=1 | $OVERDUE_TOTAL | ❌ |")
+else
+  PASS=$((PASS+1))
+  ROWS+=("| overdue list has rows | GET /api/visit-logs/overdue | >=1 | $OVERDUE_TOTAL | ✅ |")
+fi
+
+# Staff marks done (kiosk visit)
+T "staff mark done (kiosk visit)" 200 PATCH "/api/visit-logs/$KID/done" '{}' "$STJAR"
+
+# Non-staff tries to mark done
+T "non-staff mark done (forbidden)" 403 PATCH "/api/visit-logs/$KID/done" '{}' "$SECJAR"
+
+# Mark already-completed is 409
+T "mark already-done (conflict)" 409 PATCH "/api/visit-logs/$KID/done" '{}' "$STJAR"
+
+# Guard sign-out
+T "guard sign out (sec1)" 200 PATCH "/api/security-guard/visit-logs/$KID/sign-out" '{}' "$SECJAR"
+T "double sign-out (conflict)" 409 PATCH "/api/security-guard/visit-logs/$KID/sign-out" '{}' "$SECJAR"
+T "non-sec sign-out (forbidden)" 403 PATCH "/api/security-guard/visit-logs/$KID/sign-out" '{}' "$STJAR"
+
+# Sign out a not-completed visit (visit 1 is completed, so use a fresh kiosk registration)
+T "kiosk register 2 (for sign-out test)" 201 POST /api/security-guard/kiosk/register "@fullname=PhotoVisit&contact_number=09179999998&address=Test&office_id=1&purpose=Delivery" "$SECJAR"
+KID2=$(jget /tmp/_body '["logId"]')
+T "sign-out before mark-done (conflict)" 409 PATCH "/api/security-guard/visit-logs/$KID2/sign-out" '{}' "$SECJAR"
 
 echo
 echo "## Results"
