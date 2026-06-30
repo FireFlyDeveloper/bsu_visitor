@@ -1,318 +1,202 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from "vue";
-import { useVisitorLinkStore } from "@/store/visitorLinks";
+import { onMounted, ref, computed } from "vue";
+import { useOfficeStore } from "@/store/office";
 
-const visitorLinkStore = useVisitorLinkStore();
+const officeStore = useOfficeStore();
 const currentIndex = ref(0);
-const autoRefreshEnabled = ref(true);
 
-// 🔥 always correct environment (local or ngrok)
 const BASE_URL = window.location.origin;
 
-// Polling interval reference
-let pollingInterval = null;
-
-// Get recent links first (newest first)
-const sortedLinks = computed(() => {
-  // Assuming links have created_at or id - adjust based on your data structure
-  return [...visitorLinkStore.links].sort((a, b) => {
-    // If you have created_at field
-    if (a.created_at && b.created_at) {
-      return new Date(b.created_at) - new Date(a.created_at);
-    }
-    // Fallback to id (assuming higher id = newer)
-    return (b.id || 0) - (a.id || 0);
+const sortedOffices = computed(() => {
+  return [...(officeStore.offices || [])].sort((a, b) => {
+    return String(a.office_name).localeCompare(String(b.office_name));
   });
 });
 
-const currentLink = computed(() => {
-  if (sortedLinks.value.length === 0) return null;
-  return sortedLinks.value[currentIndex.value];
-});
+const currentOffice = computed(() => sortedOffices.value[currentIndex.value]);
 
-const generateAccessUrl = (token) => {
-  return `${BASE_URL}/visitor-access/${token}`;
+// FIXED URL — same QR per office, never changes per visitor.
+// Print this and stick it on the office door.
+const officeAccessUrl = (officeId) => {
+  return `${BASE_URL}/office/${officeId}`;
 };
 
-const generateQR = (token) => {
-  const url = encodeURIComponent(generateAccessUrl(token));
-  return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${url}`;
+const generateQR = (officeId) => {
+  const url = encodeURIComponent(officeAccessUrl(officeId));
+  return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${url}`;
 };
 
-// Navigation methods
 const next = () => {
-  if (sortedLinks.value.length > 0) {
-    currentIndex.value = (currentIndex.value + 1) % sortedLinks.value.length;
+  if (sortedOffices.value.length > 0) {
+    currentIndex.value = (currentIndex.value + 1) % sortedOffices.value.length;
   }
 };
 
 const prev = () => {
-  if (sortedLinks.value.length > 0) {
+  if (sortedOffices.value.length > 0) {
     currentIndex.value =
       currentIndex.value === 0
-        ? sortedLinks.value.length - 1
+        ? sortedOffices.value.length - 1
         : currentIndex.value - 1;
   }
 };
 
-const goToIndex = (index) => {
-  currentIndex.value = index;
-};
+const goToIndex = (i) => (currentIndex.value = i);
 
-// Fetch data with option to preserve current index
-const fetchAndUpdate = async (preserveIndex = true) => {
-  const currentId = currentLink.value?.id;
-  await visitorLinkStore.fetchVisitorLinks();
+const printCurrent = () => window.print();
 
-  if (preserveIndex && currentId) {
-    // Try to find the same visitor in the new data
-    const newIndex = sortedLinks.value.findIndex(
-      (link) => link.id === currentId,
-    );
-    if (newIndex !== -1) {
-      currentIndex.value = newIndex;
-    } else if (sortedLinks.value.length > 0) {
-      // If current visitor is gone, go to first item
-      currentIndex.value = 0;
-    }
-  } else if (
-    sortedLinks.value.length > 0 &&
-    currentIndex.value >= sortedLinks.value.length
-  ) {
-    // Adjust index if it's out of bounds
-    currentIndex.value = 0;
-  }
-};
-
-// Auto-refresh to detect new visitor_log entries
-const startAutoRefresh = () => {
-  if (pollingInterval) clearInterval(pollingInterval);
-
-  // Poll every 5 seconds (adjust as needed)
-  pollingInterval = setInterval(async () => {
-    await fetchAndUpdate(true);
-  }, 5000);
-};
-
-const stopAutoRefresh = () => {
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
-  }
-};
-
-const toggleAutoRefresh = () => {
-  autoRefreshEnabled.value = !autoRefreshEnabled.value;
-  if (autoRefreshEnabled.value) {
-    startAutoRefresh();
-  } else {
-    stopAutoRefresh();
-  }
-};
-
-// Manual refresh button handler
-const manualRefresh = async () => {
-  await fetchAndUpdate(false); // Reset to first item on manual refresh
-};
-
-// Check for new data periodically even when auto-refresh is off
-// You can also use WebSocket for real-time updates
-const checkForUpdates = async () => {
-  const oldLength = sortedLinks.value.length;
-  await fetchAndUpdate(true);
-  const newLength = sortedLinks.value.length;
-
-  if (newLength > oldLength) {
-    // New visitor added! Show notification (optional)
-    console.log(`New visitor added! Total: ${newLength}`);
-    // You could add a toast notification here
-  }
-};
-
-onMounted(() => {
-  fetchAndUpdate(false);
-  startAutoRefresh();
-});
-
-onUnmounted(() => {
-  stopAutoRefresh();
+onMounted(async () => {
+  await officeStore.fetchOffices();
+  if (sortedOffices.value.length > 0) currentIndex.value = 0;
 });
 </script>
 
 <template>
-
   <div class="container mx-auto px-4 py-6">
-    <!-- Controls Bar with Red Accent -->
+    <!-- Top bar -->
     <div
-      class="flex flex-col sm:flex-row justify-between items-center mb-6 bg-white rounded-lg shadow-lg border-l-8 border-red-800 p-4"
+      class="flex flex-col items-center justify-between gap-3 mb-6 rounded-2xl border-2 border-[var(--bsu-red)] bg-white p-4 shadow-sm sm:flex-row"
     >
-      <div class="flex gap-2 mb-3 sm:mb-0">
+      <div>
+        <p class="eyebrow text-[0.65rem]">Office QR codes</p>
+        <h1 class="mt-1 text-2xl font-bold text-[var(--bsu-ink)]">
+          Print &amp; stick on each office door
+        </h1>
+        <p class="text-sm text-[var(--bsu-ink-2)]">
+          One fixed QR per destination. Visitors scan to self-register.
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
         <button
-          @click="manualRefresh"
-          class="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition shadow-md flex items-center gap-2"
+          @click="prev"
+          class="rounded-lg border-2 border-[var(--bsu-red)] bg-white px-3 py-2 font-bold text-[var(--bsu-red)] hover:bg-[var(--bsu-red)] hover:text-white"
         >
-          <span>🔄</span> Refresh
+          ←
         </button>
         <button
-          @click="toggleAutoRefresh"
-          :class="[
-            'px-4 py-2 rounded-lg transition shadow-md flex items-center gap-2',
-            autoRefreshEnabled
-              ? 'bg-green-700 text-white hover:bg-green-800'
-              : 'bg-gray-500 text-white hover:bg-gray-600',
-          ]"
+          @click="next"
+          class="rounded-lg border-2 border-[var(--bsu-red)] bg-white px-3 py-2 font-bold text-[var(--bsu-red)] hover:bg-[var(--bsu-red)] hover:text-white"
         >
-          <span>{{ autoRefreshEnabled ? "⏸️" : "▶️" }}</span>
-          {{ autoRefreshEnabled ? "Auto-refresh ON" : "Auto-refresh OFF" }}
+          →
+        </button>
+        <button
+          @click="printCurrent"
+          class="rounded-lg bg-[var(--bsu-red)] px-4 py-2 font-bold text-white shadow-md hover:bg-[#a30e22]"
+        >
+          Print
         </button>
       </div>
     </div>
 
-    <!-- No data state -->
+    <!-- Empty state -->
     <div
-      v-if="sortedLinks.length === 0"
-      class="text-center py-12 bg-gray-50 rounded-xl border border-gray-200"
+      v-if="sortedOffices.length === 0"
+      class="text-center py-16 rounded-2xl border-2 border-dashed border-[var(--bsu-line)]"
     >
-      <div class="text-6xl mb-4">📋</div>
-      <p class="text-gray-500 text-lg">No visitor links available</p>
-      <p class="text-gray-400 text-sm mt-2">New visitors will appear here</p>
+      <p class="text-5xl">🏢</p>
+      <p class="mt-4 text-lg font-semibold text-[var(--bsu-ink)]">
+        No offices yet
+      </p>
+      <p class="mt-1 text-sm text-[var(--bsu-ink-2)]">
+        Add offices in the admin panel to generate their QR codes.
+      </p>
     </div>
 
-    <!-- Carousel -->
+    <!-- QR card -->
     <div
       v-else
-      class="relative bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-xl border border-red-100 p-6 md:p-8"
+      class="rounded-3xl border-2 border-[var(--bsu-line)] bg-white p-6 shadow-xl md:p-10"
     >
-      <!-- Main QR Display -->
-      <div class="flex flex-col items-center justify-center">
-        <div
-          class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 mb-6 border-2 border-red-200 relative"
+      <div class="flex flex-col items-center">
+        <!-- Office header -->
+        <p
+          class="font-display rounded-full bg-[var(--bsu-red)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white"
         >
-          <!-- Red accent ribbon -->
-          <div
-            class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-800 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md"
-          >
-            WELCOME TO BSU
-          </div>
+          {{ currentOffice.office_name }}
+        </p>
+        <h2
+          class="font-display mt-4 text-3xl font-bold text-[var(--bsu-ink)] md:text-4xl"
+        >
+          Scan to register your visit
+        </h2>
+        <p class="mt-2 max-w-md text-center text-sm text-[var(--bsu-ink-2)]">
+          Visitors scan this code with their phone camera to sign in to
+          <strong>{{ currentOffice.office_name }}</strong
+          >. The same code is used by every visitor — print and stick it on the
+          office door.
+        </p>
+
+        <!-- QR code -->
+        <div
+          class="mt-8 rounded-3xl border-4 border-[var(--bsu-red)] bg-white p-6 shadow-2xl"
+        >
           <img
-            :src="generateQR(currentLink.token)"
-            class="w-80 h-80 md:w-[450px] md:h-[450px] object-contain"
-            alt="QR Code"
+            :src="generateQR(currentOffice.id)"
+            :alt="`QR code for ${currentOffice.office_name}`"
+            class="h-80 w-80 object-contain md:h-96 md:w-96"
           />
         </div>
 
-        <!-- Visitor Info Card -->
+        <!-- URL -->
         <div
-          class="text-center mb-6 bg-white rounded-xl shadow-md p-6 w-full max-w-md border-t-4 border-red-800"
+          class="mt-6 max-w-xl rounded-xl border border-[var(--bsu-line)] bg-[var(--bsu-paper-2)] p-3"
         >
-          <h2
-            class="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2"
+          <p class="text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--bsu-ink-3)]">
+            Destination URL (fixed)
+          </p>
+          <p
+            class="mt-1 break-all font-mono text-xs text-[var(--bsu-red)]"
           >
-            <span class="text-red-800">👤</span>
-            {{ currentLink.visitor.fullname }}
-          </h2>
-          <div class="mt-3 space-y-2">
-            <p class="text-gray-600 flex items-center justify-center gap-2">
-              <span class="text-red-800">📞</span>
-              {{ currentLink.visitor.contact_number }}
-            </p>
-            <p class="text-gray-600 flex items-center justify-center gap-2">
-              <span class="text-red-800">🏢</span>
-              {{ currentLink.office.office_name }}
-            </p>
-          </div>
-          <div class="mt-4 pt-3 border-t border-gray-100">
-            <p
-              class="text-xs text-red-700 break-all max-w-md mx-auto bg-red-50 p-2 rounded-lg font-mono"
-            >
-              🔗 {{ generateAccessUrl(currentLink.token) }}
-            </p>
-          </div>
+            {{ officeAccessUrl(currentOffice.id) }}
+          </p>
+        </div>
+
+        <!-- BSU brand mark -->
+        <div class="mt-6 flex items-center gap-2 text-xs text-[var(--bsu-ink-3)]">
+          <img
+            src="/logo/BatStateU-NEU-Logo-1-300x282.png"
+            alt="BSU"
+            class="h-5 w-5"
+          />
+          <span>BSU Visitor · Batangas State University</span>
         </div>
       </div>
 
-      <!-- Navigation Arrows with Red Theme -->
-      <button
-        @click="prev"
-        class="absolute left-2 md:left-0 top-1/2 transform -translate-y-1/2 bg-red-800 hover:bg-red-900 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-110"
-        aria-label="Previous"
+      <!-- Office picker chips -->
+      <div
+        class="mt-8 flex flex-wrap justify-center gap-2 border-t border-[var(--bsu-line)] pt-6"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-      </button>
-      <button
-        @click="next"
-        class="absolute right-2 md:right-0 top-1/2 transform -translate-y-1/2 bg-red-800 hover:bg-red-900 text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-110"
-        aria-label="Next"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </button>
-
-      <!-- Name Navigation (Small navigation) with Red Selection -->
-      <div class="mt-6">
-        <div
-          class="flex flex-wrap justify-center gap-2 max-h-32 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-red-100"
-        >
-          <button
-            v-for="(link, idx) in sortedLinks"
-            :key="link.token"
-            @click="goToIndex(idx)"
-            :class="[
-              'px-3 py-1.5 rounded-full text-sm transition-all duration-200 font-medium shadow-sm',
-              currentIndex === idx
-                ? 'bg-red-800 text-white shadow-md ring-2 ring-red-300'
-                : 'bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-800',
-            ]"
-          >
-            {{ link.visitor.fullname }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Indicator dots with Red Accent -->
-      <div class="flex justify-center gap-2 mt-5">
         <button
-          v-for="(_, idx) in sortedLinks"
-          :key="idx"
+          v-for="(office, idx) in sortedOffices"
+          :key="office.id"
           @click="goToIndex(idx)"
           :class="[
-            'h-2 rounded-full cursor-pointer transition-all duration-200',
+            'rounded-full px-4 py-1.5 text-sm font-semibold transition-all',
             currentIndex === idx
-              ? 'bg-red-800 w-6'
-              : 'bg-gray-300 w-2 hover:bg-red-300',
+              ? 'bg-[var(--bsu-red)] text-white shadow-md'
+              : 'bg-[var(--bsu-paper-2)] text-[var(--bsu-ink-2)] hover:bg-[var(--bsu-red-soft)] hover:text-[var(--bsu-red)]',
           ]"
-        ></button>
+        >
+          {{ office.office_name }}
+        </button>
       </div>
 
-      <!-- Visitor counter indicator -->
-      <div class="text-center mt-4 text-sm text-gray-500">
-        Visitor {{ currentIndex + 1 }} of {{ sortedLinks.length }}
-      </div>
+      <p class="mt-4 text-center text-xs text-[var(--bsu-ink-3)]">
+        Office {{ currentIndex + 1 }} of {{ sortedOffices.length }}
+      </p>
     </div>
   </div>
 </template>
+
+<style scoped>
+.eyebrow {
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--bsu-red);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+}
+.font-display {
+  font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+}
+</style>

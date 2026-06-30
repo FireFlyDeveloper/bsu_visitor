@@ -31,6 +31,16 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    // Public per-office fixed-QR landing page.
+    // Visitors scan the QR stuck on the office door → land here
+    // → self-register (no auth, no photo).
+    path: "/office/:id",
+    name: "OfficeVisitorAccess",
+    component: () =>
+      import("../views/PublicPages/OfficeVisitorAccess.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
     path: "/qr-code",
     name: "QRCode",
     component: ShowQr,
