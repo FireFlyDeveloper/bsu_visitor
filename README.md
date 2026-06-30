@@ -22,6 +22,27 @@ real-time status tracking for **admin**, **staff**, **security guards**, and **v
 
 ---
 
+## Guard-house kiosk flow
+
+The system supports a kiosk workflow for guard houses at the school entrance:
+
+1. **Guard logs visitor** at `/security/kiosk` — name, contact, address, photo, purpose, destination office.
+2. **Visitor appears** in the destination office's staff dashboard at `/staff/dashboard` under "Visitors waiting" with their info and photo.
+3. **Office marks done** with the "Mark done" button when the visitor's business is complete. This sets `time_out`.
+4. **Guard sees the visitor in the "Pending sign-out" panel** of `/security/kiosk` and `/security/visitors/status` with an audible alarm playing.
+5. **Guard taps "Sign out"** when the visitor physically leaves. This sets `left_at` and silences the alarm.
+
+Endpoints:
+
+| Method | Path | Role |
+|---|---|---|
+| `POST` | `/api/security-guard/kiosk/register` | security |
+| `PATCH` | `/api/visit-logs/:id/done` | staff, admin |
+| `GET` | `/api/visit-logs/overdue` | any authenticated |
+| `PATCH` | `/api/security-guard/visit-logs/:id/sign-out` | security |
+
+---
+
 ## Quick start
 
 ### 1. Install
