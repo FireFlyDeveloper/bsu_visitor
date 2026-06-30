@@ -101,7 +101,7 @@
         </div>
 
         <!-- KPI: Visits today (small) -->
-        <div class="surface rise rise-delay-2 p-6 lg:col-span-3">
+        <div class="surface rise rise-delay-2 flex flex-col items-center justify-center p-6 text-center lg:col-span-3">
           <p class="eyebrow">Visits today</p>
           <p class="font-display mt-3 text-4xl font-bold tabular tracking-tight">
             {{ kpi.visitsToday }}
@@ -110,7 +110,7 @@
         </div>
 
         <!-- KPI: Offices available (small) -->
-        <div class="surface rise rise-delay-2 p-6 lg:col-span-3">
+        <div class="surface rise rise-delay-2 flex flex-col items-center justify-center p-6 text-center lg:col-span-3">
           <p class="eyebrow">Open now</p>
           <p class="font-display mt-3 text-4xl font-bold tabular tracking-tight text-emerald-700">
             {{ kpi.officesAvailable }}
