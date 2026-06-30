@@ -51,10 +51,31 @@ const routes = [
     redirect: { name: "VisitorLogs" },
   },
   {
+    // Authenticated shared pages — wrapped in the BSU app shell
+    // (navbar + content container) so they get the same header as
+    // the admin/staff/security pages.
     path: "/visitors/logs",
-    name: "VisitorLogs",
-    component: VisitorLogs,
-    meta: { requiresAuth: true },
+    component: AdminLayout,
+    children: [
+      {
+        path: "",
+        name: "VisitorLogs",
+        component: VisitorLogs,
+        meta: { requiresAuth: true },
+      },
+    ],
+  },
+  {
+    path: "/qr-code",
+    component: AdminLayout,
+    children: [
+      {
+        path: "",
+        name: "QRCode",
+        component: ShowQr,
+        meta: { requiresAuth: true },
+      },
+    ],
   },
   {
     path: "/unauthorized",
