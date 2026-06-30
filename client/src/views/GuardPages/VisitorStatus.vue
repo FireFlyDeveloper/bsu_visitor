@@ -14,6 +14,12 @@ const now = ref(Date.now());
 const alarmAudio = new Audio("/alarm.mp3");
 const alarmEnabled = ref(true);
 
+// Overdue panel state
+const overdue = ref([]);
+const overdueCount = computed(() => overdue.value.length);
+const signingOut = ref(null);
+let overduePollHandle = null;
+
 // Save alarm minutes to localStorage whenever it changes
 watch(alarmMinutes, (newValue) => {
   localStorage.setItem("visitor_alarm_minutes", newValue);
@@ -115,6 +121,39 @@ const formatMinutes = (minutes) => {
   return `${hours} hr${hours !== 1 ? "s" : ""} ${mins > 0 ? `${mins} min` : ""}`;
 };
 
+function formatTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString();
+}
+
+// Overdue polling
+async function pollOverdue() {
+  const data = await store.fetchOverdue();
+  overdue.value = data.overdue || [];
+  // Drive the existing alarm based on overdue (in addition to time threshold)
+  if (overdue.value.length > 0 && alarmEnabled.value && !alarmPlayed) {
+    alarmAudio.play().catch(() => {});
+    alarmPlayed = true;
+  } else if (overdue.value.length === 0) {
+    alarmPlayed = false;
+  }
+}
+
+async function onSignOut(log) {
+  signingOut.value = log.id;
+  try {
+    await store.signOutVisitor(log.id);
+    await pollOverdue();
+    await store.fetchVisitLogs();
+  } catch (err) {
+    console.error("Sign-out failed:", err);
+  } finally {
+    signingOut.value = null;
+  }
+}
+
 // Get progress percentage for progress bar
 const getProgressPercentage = (minutes) => {
   const threshold = Number(alarmMinutes.value);
@@ -130,10 +169,14 @@ onMounted(() => {
   timer = setInterval(() => {
     now.value = Date.now();
   }, 1000); // Update every second for live seconds counter
+
+  pollOverdue();
+  overduePollHandle = setInterval(pollOverdue, 5000);
 });
 
 onUnmounted(() => {
   clearInterval(timer);
+  if (overduePollHandle) clearInterval(overduePollHandle);
 });
 </script>
 
@@ -226,6 +269,53 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- OVERDUE SIGN-OUT PANEL -->
+    <section
+      v-if="overdue.length"
+      class="mb-6 rounded-2xl border-2 border-rose-200 bg-rose-50 p-6 shadow-sm"
+    >
+      <h2 class="text-lg font-bold text-rose-700">
+        Pending sign-out ({{ overdue.length }})
+      </h2>
+      <p class="mt-1 text-sm text-rose-600">
+        These visitors have been marked done by their office. Tap "Sign Out"
+        when they leave the guard house.
+      </p>
+      <ul class="mt-4 space-y-3">
+        <li
+          v-for="log in overdue"
+          :key="log.id"
+          class="flex items-center gap-4 rounded-2xl bg-white p-3 shadow-sm"
+        >
+          <img
+            v-if="log.visitor_img"
+            :src="`/${log.visitor_img}`"
+            class="h-14 w-14 rounded-full object-cover"
+          />
+          <div
+            v-else
+            class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 text-sm font-semibold text-slate-500"
+          >
+            {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-slate-900">{{ log.visitor_name }}</p>
+            <p class="text-xs text-slate-500">
+              {{ log.office_name }} · marked done
+              {{ formatTime(log.time_out) }}
+            </p>
+          </div>
+          <button
+            @click="onSignOut(log)"
+            :disabled="signingOut === log.id"
+            class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+          >
+            {{ signingOut === log.id ? "..." : "Sign out" }}
+          </button>
+        </li>
+      </ul>
+    </section>
 
     <!-- Table Card -->
     <div

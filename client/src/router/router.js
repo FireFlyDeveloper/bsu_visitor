@@ -143,6 +143,13 @@ const routes = [
     component: AdminLayout,
     children: [
       {
+        path: "kiosk",
+        name: "SecurityKiosk",
+        component: () => import("../views/GuardPages/Kiosk.vue"),
+        meta: { requiresAuth: true },
+        beforeEnter: roleMiddleware("security"),
+      },
+      {
         path: "visitors/status",
         name: "SecurityVisitorStatus",
         component: VisitorStatus,

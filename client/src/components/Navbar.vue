@@ -110,6 +110,7 @@ export default {
         ],
 
         security: [
+          { name: "Kiosk", path: "/security/kiosk" },
           { name: "Availability", path: "/" },
           { name: "Register Visitor", path: "/visitors/create" },
           { name: "Visitor Log", path: "/visitors/logs" },

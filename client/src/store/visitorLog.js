@@ -187,5 +187,91 @@ export const useVisitorLogStore = defineStore("visitorLog", {
         this.loading = false;
       }
     },
+
+    async kioskRegister(formData) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await fetch(
+          `${API_BASE}/security-guard/kiosk/register`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: formData,
+          },
+        );
+        const data = await handleResponse(response);
+        return data;
+      } catch (error) {
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchOverdue() {
+      try {
+        const response = await fetch(`${VISITOR_LOG_ENDPOINT}/overdue`, {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        if (!response.ok) return { overdue: [], total: 0 };
+        return await response.json();
+      } catch (error) {
+        console.error("fetchOverdue error:", error);
+        return { overdue: [], total: 0 };
+      }
+    },
+
+    async signOutVisitor(id) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await fetch(
+          `${API_BASE}/security-guard/visit-logs/${id}/sign-out`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+        const data = await handleResponse(response);
+        return data;
+      } catch (error) {
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async markDone(id) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await fetch(`${VISITOR_LOG_ENDPOINT}/${id}/done`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        const data = await handleResponse(response);
+        return data;
+      } catch (error) {
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
   },
 });

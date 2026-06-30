@@ -99,14 +99,78 @@
     >
       No office is assigned to this staff account yet.
     </div>
+
+    <!-- PENDING VISITORS -->
+    <div
+      v-if="pendingLogs.length"
+      class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+    >
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Visitors waiting</h2>
+          <p class="text-xs text-slate-500">
+            {{ pendingLogs.length }} pending
+          </p>
+        </div>
+        <button
+          @click="refreshPending"
+          :disabled="pendingLoading"
+          class="text-xs font-semibold text-amber-700 hover:underline disabled:opacity-50"
+        >
+          {{ pendingLoading ? "Refreshing..." : "Refresh" }}
+        </button>
+      </div>
+      <ul class="space-y-3">
+        <li
+          v-for="log in pendingLogs"
+          :key="log.id"
+          class="flex items-center gap-4 rounded-2xl bg-slate-50 p-3"
+        >
+          <img
+            v-if="log.visitor_img"
+            :src="`/${log.visitor_img}`"
+            class="h-14 w-14 rounded-full object-cover border border-slate-200"
+            alt="Visitor"
+          />
+          <div
+            v-else
+            class="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-sm font-semibold text-red-700"
+          >
+            {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-slate-900">{{ log.visitor_name }}</p>
+            <p class="truncate text-xs text-slate-500">
+              {{ log.purpose || "—" }} · {{ log.contact_number || "no contact" }}
+            </p>
+            <p class="text-xs text-slate-400">
+              Logged in {{ formatTime(log.time_in) }}
+            </p>
+          </div>
+          <button
+            @click="markDone(log)"
+            :disabled="marking === log.id"
+            class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {{ marking === log.id ? "..." : "Mark done" }}
+          </button>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
-import { useOfficeStore } from "../../store/office.js"; // adjust path if needed
+import { ref, onMounted } from "vue";
+import { useOfficeStore } from "../../store/office.js";
+import { useVisitorLogStore } from "../../store/visitorLog.js";
 
 const officeStore = useOfficeStore();
+const visitorLogStore = useVisitorLogStore();
+
+const pendingLogs = ref([]);
+const pendingLoading = ref(false);
+const marking = ref(null);
 
 const statusOptions = [
   { label: "Available", value: "available" },
@@ -114,9 +178,41 @@ const statusOptions = [
   { label: "Not Available", value: "not available" },
 ];
 
+async function refreshPending() {
+  pendingLoading.value = true;
+  try {
+    const data = await visitorLogStore.fetchPendingVisitLogs({ perPage: 20 });
+    pendingLogs.value = data.data || data.logs || [];
+  } catch (err) {
+    console.error("refreshPending error:", err);
+  } finally {
+    pendingLoading.value = false;
+  }
+}
+
+async function markDone(log) {
+  marking.value = log.id;
+  try {
+    await visitorLogStore.markDone(log.id);
+    await refreshPending();
+  } catch (err) {
+    console.error("markDone error:", err);
+  } finally {
+    marking.value = null;
+  }
+}
+
+function formatTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleTimeString();
+}
+
 // Fetch data on load
-onMounted(() => {
-  officeStore.fetchOfficeDashboard();
+onMounted(async () => {
+  await officeStore.fetchOfficeDashboard();
+  await refreshPending();
 });
 
 // Update status using store
