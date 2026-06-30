@@ -1,16 +1,17 @@
 <template>
+  <Navbar />
   <div class="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-5xl space-y-6">
       <!-- Header -->
       <section
-        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg"
       >
         <div
           class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
         >
           <div>
             <p
-              class="text-xs font-semibold uppercase tracking-[0.28em] text-red-700"
+              class="text-sm font-semibold uppercase tracking-[0.28em] text-red-700"
             >
               Guard House
             </p>
@@ -32,116 +33,117 @@
       </section>
 
       <!-- Form -->
-      <form
-        @submit.prevent="onSubmit"
-        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-6"
+      <section
+        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg"
       >
-        <div class="grid gap-6 sm:grid-cols-2">
-          <div>
-            <label class="block text-sm font-medium text-slate-700"
-              >Full name *</label
-            >
-            <input
-              v-model="fullname"
-              type="text"
-              required
-              class="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-            />
+        <form @submit.prevent="onSubmit" class="space-y-6">
+          <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700"
+                >Full name *</label
+              >
+              <input
+                v-model="fullname"
+                type="text"
+                required
+                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700"
+                >Contact number *</label
+              >
+              <input
+                v-model="contact_number"
+                type="tel"
+                required
+                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+              />
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700"
-              >Contact number *</label
-            >
-            <input
-              v-model="contact_number"
-              type="tel"
-              required
-              class="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-            />
-          </div>
-        </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700"
-            >Address *</label
+          <div>
+            <label class="block text-sm font-medium text-slate-700"
+              >Address *</label
+            >
+            <textarea
+              v-model="address"
+              rows="2"
+              required
+              class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+            ></textarea>
+          </div>
+
+          <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700"
+                >Destination office *</label
+              >
+              <select
+                v-model="office_id"
+                required
+                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+              >
+                <option value="">Select office</option>
+                <option v-for="o in offices" :key="o.id" :value="o.id">
+                  {{ o.office_name }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700"
+                >Purpose</label
+              >
+              <input
+                v-model="purpose"
+                type="text"
+                placeholder="e.g. inquiry, delivery, meeting"
+                class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700"
+              >Visitor photo *</label
+            >
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              required
+              @change="onFile"
+              class="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm shadow-sm file:mr-3 file:rounded-full file:border-0 file:bg-red-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
+            />
+            <img
+              v-if="imgPreview"
+              :src="imgPreview"
+              class="mt-4 h-48 w-full rounded-3xl object-cover border border-slate-200"
+              alt="Photo preview"
+            />
+          </div>
+
+          <div
+            v-if="error"
+            class="rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
           >
-          <textarea
-            v-model="address"
-            rows="2"
-            required
-            class="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-          ></textarea>
-        </div>
-
-        <div class="grid gap-6 sm:grid-cols-2">
-          <div>
-            <label class="block text-sm font-medium text-slate-700"
-              >Destination office *</label
-            >
-            <select
-              v-model="office_id"
-              required
-              class="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-            >
-              <option value="">Select office</option>
-              <option v-for="o in offices" :key="o.id" :value="o.id">
-                {{ o.office_name }}
-              </option>
-            </select>
+            {{ error }}
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700"
-              >Purpose</label
-            >
-            <input
-              v-model="purpose"
-              type="text"
-              placeholder="e.g. inquiry, delivery, meeting"
-              class="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-red-700 focus:ring-2 focus:ring-red-700/20"
-            />
-          </div>
-        </div>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-700"
-            >Visitor photo *</label
+          <button
+            type="submit"
+            :disabled="loading"
+            class="w-full rounded-3xl bg-red-800 px-6 py-4 text-base font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            required
-            @change="onFile"
-            class="mt-2 w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-red-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
-          />
-          <img
-            v-if="imgPreview"
-            :src="imgPreview"
-            class="mt-4 h-40 w-full rounded-2xl object-cover border border-slate-200"
-            alt="Photo preview"
-          />
-        </div>
-
-        <div
-          v-if="error"
-          class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-        >
-          {{ error }}
-        </div>
-
-        <button
-          type="submit"
-          :disabled="loading"
-          class="w-full rounded-2xl bg-red-800 px-6 py-4 text-base font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {{ loading ? "Logging visitor..." : "Log visitor" }}
-        </button>
-      </form>
+            {{ loading ? "Logging visitor..." : "Log visitor" }}
+          </button>
+        </form>
+      </section>
 
       <!-- Overdue sign-out panel -->
       <section
         v-if="overdue.length"
-        class="rounded-3xl border-2 border-rose-200 bg-rose-50 p-6 shadow-sm"
+        class="rounded-3xl border-2 border-rose-200 bg-rose-50 p-6 shadow-lg"
       >
         <h2 class="text-lg font-bold text-rose-700">
           Pending sign-out ({{ overdue.length }})
@@ -177,7 +179,7 @@
             <button
               @click="onSignOut(log)"
               :disabled="signingOut === log.id"
-              class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+              class="rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
             >
               {{ signingOut === log.id ? "..." : "Sign out" }}
             </button>
@@ -199,6 +201,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useOfficeStore } from "@/store/office.js";
 import { useVisitorLogStore } from "@/store/visitorLog.js";
+import Navbar from "@/components/Navbar.vue";
 import KioskSuccessModal from "@/components/KioskSuccessModal.vue";
 
 const officeStore = useOfficeStore();
@@ -328,9 +331,6 @@ function formatTime(value) {
 
 onMounted(async () => {
   await fetchOffices();
-  // Only init audio after a user interaction (autoplay policy).
-  // First poll kicks off the alarm if needed; if it does, audio will
-  // silently fail until the first click — which is fine for a kiosk.
   alarmAudio = new Audio("/alarm.mp3");
   alarmAudio.loop = true;
   await pollOverdue();
