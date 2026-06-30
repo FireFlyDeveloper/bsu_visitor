@@ -39,15 +39,6 @@
                   Open dashboard
                 </AppButton>
               </router-link>
-              <router-link to="/security/kiosk">
-                <AppButton
-                  variant="ghost"
-                  size="lg"
-                  class="text-white hover:bg-white/10"
-                >
-                  Guard kiosk →
-                </AppButton>
-              </router-link>
             </div>
           </div>
 
