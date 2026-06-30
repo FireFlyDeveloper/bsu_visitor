@@ -59,10 +59,17 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK" });
 });
 
+// Error handler — convert multer's fileFilter rejection into 400 instead of 500
 app.use((err, req, res, next) => {
   console.error(err.stack);
+
+  // multer error from fileFilter (e.g. wrong mime type)
+  if (err && err.message === "Only images are allowed") {
+    return res.status(400).json({ message: err.message });
+  }
+
   res.status(err.status || 500).json({
-    message: "Internal Server Error",
+    message: err.message || "Internal Server Error",
   });
 });
 

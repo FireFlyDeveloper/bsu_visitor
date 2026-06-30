@@ -42,7 +42,7 @@ Edit `client/.env` only if you need a non-localhost proxy target or allowed host
 
 ### 3. Seed the database
 ```bash
-npm run seed             # creates admin/admin123 + 3 demo offices
+npm run seed             # wipes backend/src/database/database.db + reseeds
 ```
 
 ### 4. Run dev
@@ -51,6 +51,12 @@ npm run dev              # starts backend :8000 and frontend :5173 concurrently
 ```
 
 Default login: **admin / admin123** — change it immediately.
+
+### 5. Run the API smoke test (optional, requires backend running on $PORT)
+```bash
+npm run test:api         # 30 endpoint tests, exits non-zero on failure
+```
+The smoke test wipes the DB before running, so don't use it against production data.
 
 ---
 
@@ -64,7 +70,7 @@ bsu_visitor/
 │   │   ├── controllers/           # 8 route handlers
 │   │   ├── models/                # 7 SQLite-backed data classes
 │   │   ├── routes/                # 8 Express routers
-│   │   ├── middleware/            # auth, upload, activity logger
+│   │   ├── middleware/            # auth, role, upload, activity logger
 │   │   └── database/              # schema + seed (auto-runs on boot)
 │   ├── uploads/                   # visitor photos (gitignored)
 │   └── .env.example
@@ -77,6 +83,9 @@ bsu_visitor/
 │   │   └── middleware/            # auth + role guards
 │   ├── vite.config.js
 │   └── .env.example
+├── scripts/
+│   ├── seed-fresh.mjs             # wipes + reseeds the SQLite DB
+│   └── smoke-test.sh              # 30-endpoint E2E API test
 └── doc/
     ├── known_issues.md            # historical bug list (mostly resolved)
     └── visit_logs.md              # API design notes
@@ -126,8 +135,10 @@ bsu_visitor/
 | 7 | `UserController.create` required `office_id` for **all** roles via `requiresOffice()` | Only `staff` (role_id 3) requires it; `admin` and `security` are exempt |
 | 8 | No minimum password length check | Reject passwords shorter than 6 chars |
 | 9 | `/api/security-guard/visitors/active` missing (called for in `doc/visit_logs.md`) | Implemented using `VisitLog.findActiveVisits`, enriches with visitor + office names |
-| 10 | `/admin/register` route missing — `Register.vue` was orphaned | Route + lazy import added |
-| 11 | Dead `ar.js` dependency in `client/package.json` (not imported anywhere) | Removed |
+| 11 | `/admin/register` route missing — `Register.vue` was orphaned | Route + lazy import added |
+| 12 | Dead `ar.js` dependency in `client/package.json` (not imported anywhere) | Removed |
+| 13 | **No role-based authorization on backend** — any logged-in user could call admin / security routes. Client-side `roleMiddleware` existed but server had no equivalent | New `backend/src/middleware/roleMiddleware.js`, wired into `authRoutes.js` (admin-only user mgmt) and `securityGuardRoutes.js` (security-only) |
+| 14 | `server.js` error handler swallowed multer `fileFilter` errors as 500 (non-image upload) | Returns 400 with the real error message; also surfaces the real error message in the generic handler |
 
 ---
 

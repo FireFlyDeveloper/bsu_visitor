@@ -1,6 +1,7 @@
 import express from "express";
 import UserController from "../controllers/UserController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { roleMiddleware } from "../middleware/roleMiddleware.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 
 const router = express.Router();
@@ -9,15 +10,16 @@ const router = express.Router();
 router.post("/login", UserController.login);
 router.post("/logout", UserController.logout);
 
-// Protected routes
+// Protected routes — any authenticated user can read their own data
 router.use(authMiddleware, activityLogger);
-
 router.get("/me", UserController.getCurrentUser);
 router.get("/all-with-activity", UserController.getAllWithLastActivity);
-router.get("/", UserController.getAll);
-router.get("/:id", UserController.getById);
-router.post("/", UserController.create);
-router.put("/:id", UserController.update);
-router.delete("/:id", UserController.delete);
+
+// Admin-only: user management
+router.get("/", roleMiddleware("admin"), UserController.getAll);
+router.get("/:id", roleMiddleware("admin"), UserController.getById);
+router.post("/", roleMiddleware("admin"), UserController.create);
+router.put("/:id", roleMiddleware("admin"), UserController.update);
+router.delete("/:id", roleMiddleware("admin"), UserController.delete);
 
 export default router;
