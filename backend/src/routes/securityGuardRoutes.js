@@ -1,8 +1,11 @@
 import express from "express";
 import SecurityGuardController from "../controllers/SecurityGuardController.js";
+import KioskController from "../controllers/KioskController.js";
+import GuardSignOutController from "../controllers/GuardSignOutController.js";
 import VisitLog from "../models/VisitLog.js";
 import Visitor from "../models/Visitor.js";
 import Office from "../models/Office.js";
+import upload from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { roleMiddleware } from "../middleware/roleMiddleware.js";
 import { activityLogger } from "../middleware/activityLogger.js";
@@ -10,6 +13,22 @@ import { activityLogger } from "../middleware/activityLogger.js";
 const router = express.Router();
 
 router.use(authMiddleware, activityLogger);
+
+// Guard kiosk — register a visitor at the school entrance.
+// Photo is required.
+router.post(
+  "/kiosk/register",
+  roleMiddleware("security"),
+  upload.single("img"),
+  KioskController.register,
+);
+
+// Guard sign-out — when the visitor physically leaves the guard house.
+router.patch(
+  "/visit-logs/:id/sign-out",
+  roleMiddleware("security"),
+  GuardSignOutController.signOut,
+);
 
 // Security-only routes
 router.patch(
@@ -21,7 +40,6 @@ router.patch(
 /**
  * GET /security-guard/visitors/active
  * Returns the list of visitors still inside the campus (time_out IS NULL).
- * Documented in doc/visit_logs.md — used by the security page.
  */
 router.get(
   "/visitors/active",
@@ -38,12 +56,14 @@ router.get(
           visitor_id: log.visitor_id,
           visitor_name: visitor.fullname || null,
           contact_number: visitor.contact_number || null,
+          visitor_img: visitor.img || null,
           office_id: log.office_id,
           office_name: office?.office_name || null,
           purpose: log.purpose,
           status: log.status,
           time_in: log.time_in,
           time_out: log.time_out,
+          left_at: log.left_at,
         };
       });
 

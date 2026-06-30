@@ -252,6 +252,35 @@ class VisitorLogController {
     }
   }
 
+  static listOverdue(req, res) {
+    try {
+      const rows = VisitLog.findOverdue({ limit: 100 });
+      return res.json({ overdue: rows, total: rows.length });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  static markDone(req, res) {
+    try {
+      const { id } = req.params;
+      const log = VisitLog.findById(id);
+      if (!log) {
+        return res.status(404).json({ error: "Visit log not found" });
+      }
+      const ok = VisitLog.markDone(id);
+      if (!ok) {
+        return res.status(409).json({ error: "Visit already completed" });
+      }
+      return res.json({
+        message: "Visit marked done",
+        log: VisitLog.findById(id),
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   static delete(req, res) {
     try {
       const { id } = req.params;
