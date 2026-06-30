@@ -41,6 +41,14 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    // /office (no id) — same page, starts in destination-picker mode.
+    path: "/office",
+    name: "OfficeVisitorPicker",
+    component: () =>
+      import("../views/PublicPages/OfficeVisitorAccess.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
     path: "/qr-code",
     name: "QRCode",
     component: ShowQr,

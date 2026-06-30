@@ -30,6 +30,23 @@ class PublicController {
     }
   }
 
+  // GET /api/public/offices — public list of offices (no auth) for the
+  // destination picker on the /office QR landing page.
+  static listOffices(req, res) {
+    try {
+      const rows = db
+        .prepare(
+          `SELECT id, office_name, status, type
+           FROM offices
+           ORDER BY office_name`,
+        )
+        .all();
+      return res.json({ offices: rows });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // POST /api/public/office/:id/register
   // body: { fullname, contact_number, address, purpose }
   // Creates (or reuses) the visitor, then creates a pending visit_log.

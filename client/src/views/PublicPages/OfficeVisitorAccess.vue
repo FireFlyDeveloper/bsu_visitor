@@ -92,9 +92,87 @@
         </div>
       </div>
 
+      <!-- Destination picker (only when no officeId in URL) -->
+      <div
+        v-else-if="!officeId && !submitted"
+        class="mt-8 flex-1"
+      >
+        <div
+          class="rounded-3xl bg-white p-6 text-[var(--bsu-ink)] shadow-2xl"
+        >
+          <p
+            class="eyebrow text-[0.65rem] font-bold uppercase tracking-widest text-[var(--bsu-red)]"
+          >
+            Welcome
+          </p>
+          <h1
+            class="font-display mt-2 text-3xl font-bold tracking-tight text-[var(--bsu-ink)]"
+          >
+            Which office are you visiting?
+          </h1>
+          <p class="mt-2 text-sm text-[var(--bsu-ink-2)]">
+            Tap the office you're here to see. You'll register your visit on the
+            next screen.
+          </p>
+
+          <div
+            v-if="loadingOffices"
+            class="mt-6 flex justify-center py-8"
+          >
+            <div
+              class="h-8 w-8 animate-spin rounded-full border-4 border-[var(--bsu-red)]/20 border-t-[var(--bsu-red)]"
+            />
+          </div>
+
+          <div
+            v-else-if="!offices.length"
+            class="mt-6 rounded-xl border-2 border-dashed border-[var(--bsu-line)] p-8 text-center text-sm text-[var(--bsu-ink-3)]"
+          >
+            No offices available right now.
+          </div>
+
+          <div v-else class="mt-6 grid gap-3 sm:grid-cols-2">
+            <button
+              v-for="o in offices"
+              :key="o.id"
+              type="button"
+              @click="pickOffice(o.id)"
+              class="group flex items-center justify-between gap-3 rounded-2xl border-2 border-[var(--bsu-line)] bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[var(--bsu-red)] hover:shadow-lg"
+            >
+              <div class="min-w-0">
+                <p
+                  class="font-display truncate text-lg font-bold uppercase tracking-wider text-[var(--bsu-ink)]"
+                >
+                  {{ o.office_name }}
+                </p>
+                <p
+                  class="mt-0.5 text-xs font-medium uppercase tracking-wider"
+                  :class="o.status === 'available' ? 'text-emerald-600' : 'text-slate-500'"
+                >
+                  {{ o.status || "unknown" }}
+                </p>
+              </div>
+              <span
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bsu-red)] text-white transition-transform group-hover:scale-110"
+              >
+                →
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Registration form -->
       <div v-else class="mt-8 flex-1">
         <div class="rounded-3xl bg-white p-6 text-[var(--bsu-ink)] shadow-2xl">
+          <button
+            v-if="!officeId"
+            type="button"
+            @click="backToPicker"
+            class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--bsu-red)] hover:underline"
+          >
+            ← Change office
+          </button>
           <p
             class="eyebrow text-[0.65rem] font-bold uppercase tracking-widest text-[var(--bsu-red)]"
           >
@@ -191,14 +269,19 @@ import { useRoute } from "vue-router";
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 const route = useRoute();
-const officeId = Number(route.params.id);
-
+// /office (no id) → pick destination. /office/:id → register to that office.
+const officeId = route.params.id ? Number(route.params.id) : null;
 const office = ref(null);
 const loadingOffice = ref(true);
 const formError = ref("");
 const submitting = ref(false);
 const submitted = ref(false);
 const submittedLogId = ref(null);
+
+// Destination picker state
+const offices = ref([]);
+const loadingOffices = ref(false);
+const selectedOfficeId = ref(null);
 
 const form = reactive({
   fullname: "",
@@ -207,25 +290,64 @@ const form = reactive({
   purpose: "",
 });
 
-onMounted(async () => {
+async function loadOffices() {
+  loadingOffices.value = true;
   try {
-    const res = await fetch(`${API_BASE}/public/office/${officeId}`);
+    const res = await fetch(`${API_BASE}/public/offices`);
     if (res.ok) {
-      office.value = await res.json();
+      const data = await res.json();
+      // Handle both shapes: { offices: [...] } and direct array
+      offices.value = Array.isArray(data) ? data : (data.offices || []);
     }
   } catch (_) {
-    /* leave office null → not-found state */
+    /* empty list */
   } finally {
+    loadingOffices.value = false;
+  }
+}
+
+onMounted(async () => {
+  if (officeId) {
+    try {
+      const res = await fetch(`${API_BASE}/public/office/${officeId}`);
+      if (res.ok) {
+        office.value = await res.json();
+      }
+    } catch (_) {
+      /* leave office null → not-found state */
+    } finally {
+      loadingOffice.value = false;
+    }
+  } else {
     loadingOffice.value = false;
+    await loadOffices();
   }
 });
+
+function pickOffice(id) {
+  selectedOfficeId.value = id;
+  office.value = offices.value.find((o) => o.id === id) || null;
+  loadingOffice.value = false;
+}
+
+function backToPicker() {
+  office.value = null;
+  selectedOfficeId.value = null;
+  submitted.value = false;
+  formError.value = "";
+  form.fullname = "";
+  form.contact_number = "";
+  form.address = "";
+  form.purpose = "";
+}
 
 async function onSubmit() {
   formError.value = "";
   submitting.value = true;
+  const targetId = officeId || selectedOfficeId.value;
   try {
     const res = await fetch(
-      `${API_BASE}/public/office/${officeId}/register`,
+      `${API_BASE}/public/office/${targetId}/register`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
