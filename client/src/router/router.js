@@ -1,7 +1,6 @@
 import { createWebHistory, createRouter } from "vue-router";
 import { useUserStore } from "../store/user.js";
 import LoginPage from "../views/AuthPages/LoginPage.vue";
-import CreateVisitor from "../views/VisitorPages/CreateVisitor.vue";
 import VisitorLogs from "../views/VisitorPages/VisitorLogs.vue";
 import VisitorAccess from "../views/VisitorPages/VisitorAccess.vue";
 import AdminDashboard from "../views/AdminPages/Dashboard.vue";
@@ -45,10 +44,11 @@ const routes = [
     beforeEnter: guestMiddleware,
   },
   {
+    // /visitors/create is now an alias for the visitor log.
+    // The actual visitor registration happens at /security/kiosk
+    // for guards. The old CreateVisitor form was removed.
     path: "/visitors/create",
-    name: "CreateVisitor",
-    component: CreateVisitor,
-    meta: { requiresAuth: true },
+    redirect: { name: "VisitorLogs" },
   },
   {
     path: "/visitors/logs",
