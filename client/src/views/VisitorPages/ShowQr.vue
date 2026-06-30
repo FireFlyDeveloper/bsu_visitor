@@ -1,7 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref, computed } from "vue";
 import { useVisitorLinkStore } from "@/store/visitorLinks";
-import Navbar from "../../components/Navbar.vue";
 
 const visitorLinkStore = useVisitorLinkStore();
 const currentIndex = ref(0);
@@ -141,7 +140,6 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Navbar />
 
   <div class="container mx-auto px-4 py-6">
     <!-- Controls Bar with Red Accent -->

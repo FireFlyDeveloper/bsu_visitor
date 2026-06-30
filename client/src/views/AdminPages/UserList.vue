@@ -1,5 +1,4 @@
 <template>
-  <Navbar />
   <div class="grain min-h-screen bg-[var(--paper)] text-[var(--ink)]">
     <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8 space-y-6">
       <header class="rise flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -77,7 +76,6 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
-import Navbar from "@/components/Navbar.vue";
 import BaseModal from "@/components/BaseModal.vue";
 import CreateUserForm from "@/components/CreateAccountForm.vue";
 import AppButton from "@/components/AppButton.vue";

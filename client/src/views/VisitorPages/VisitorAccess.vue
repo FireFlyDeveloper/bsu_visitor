@@ -1,5 +1,4 @@
 <template>
-  <Navbar />
   <div class="min-h-screen bg-slate-100 px-4 sm:px-6 lg:px-8 md:pl-64">
     <div
       class="mx-auto max-w-4xl border border-slate-200 bg-white p-8 shadow-[0_20px_80px_rgba(15,23,42,0.08)]"
@@ -270,7 +269,6 @@
 </template>
 
 <script setup>
-import Navbar from "../../components/Navbar.vue";
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 

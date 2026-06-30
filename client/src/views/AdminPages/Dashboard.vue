@@ -1,5 +1,4 @@
 <template>
-  <Navbar />
   <div class="grain min-h-screen bg-[var(--paper)] text-[var(--ink)]">
     <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <!-- Header -->

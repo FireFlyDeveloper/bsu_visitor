@@ -1,5 +1,4 @@
 <template>
-  <Navbar />
   <div class="grain min-h-screen bg-[var(--paper)] text-[var(--ink)]">
     <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 space-y-6">
       <!-- Office hero -->
@@ -143,7 +142,6 @@ import { ref, onMounted } from "vue";
 import { useOfficeStore } from "@/store/office.js";
 import { useVisitorLogStore } from "@/store/visitorLog.js";
 import { useToast } from "@/composables/useToast";
-import Navbar from "@/components/Navbar.vue";
 import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
