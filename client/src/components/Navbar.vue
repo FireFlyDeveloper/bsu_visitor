@@ -68,7 +68,7 @@
               {{ userStore.currentUser.fullname || userStore.currentUser.username }}
             </p>
             <p class="text-[0.6875rem] capitalize text-[var(--bsu-red)]">
-              {{ userStore.currentUser.role || roleKey }}
+              {{ userStore.currentUser.role?.name || roleLabel }}
             </p>
           </div>
           <button
@@ -195,6 +195,16 @@ const initials = computed(() => {
       .map((s) => s[0].toUpperCase())
       .join("") || "·"
   );
+});
+
+// Human-readable role label for the header pill.
+// Backend returns role as { id, name }; fall back to the roleKey string.
+const roleLabel = computed(() => {
+  const u = userStore.currentUser;
+  if (!u) return "";
+  if (u.role && typeof u.role === "object") return u.role.name || roleKey.value;
+  if (typeof u.role === "string") return u.role;
+  return roleKey.value || "";
 });
 
 function isActive(path) {
