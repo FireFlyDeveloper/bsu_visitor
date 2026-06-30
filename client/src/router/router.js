@@ -143,6 +143,12 @@ const routes = [
     component: AdminLayout,
     children: [
       {
+        // /security → visitor status (the dashboard has been merged
+        // into the home page; security opens Visitor Status directly)
+        path: "",
+        redirect: { name: "SecurityVisitorStatus" },
+      },
+      {
         path: "kiosk",
         name: "SecurityKiosk",
         component: () => import("../views/GuardPages/Kiosk.vue"),

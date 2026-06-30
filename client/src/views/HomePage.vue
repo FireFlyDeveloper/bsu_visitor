@@ -171,6 +171,50 @@
       </div>
     </section>
 
+    <!-- Security panel shortcut — only for security role -->
+    <section
+      v-if="userStore.currentUser?.role === 'security'"
+      class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"
+    >
+      <div
+        class="overflow-hidden rounded-3xl border-2 border-[var(--bsu-red)] bg-gradient-to-br from-white via-white to-[var(--bsu-red)]/5 shadow-lg"
+      >
+        <div class="grid items-center gap-6 p-8 lg:grid-cols-[1fr_auto] lg:p-10">
+          <div>
+            <p class="eyebrow text-[var(--bsu-red)]">Security panel</p>
+            <h2
+              class="font-display mt-2 text-2xl font-bold text-[var(--bsu-ink)] lg:text-3xl"
+            >
+              Visitor status
+            </h2>
+            <p class="mt-3 max-w-2xl text-sm text-[var(--bsu-ink-2)]">
+              See who is currently on campus, mark visitors as left, and respond
+              to overdue alarms. All from one panel.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div
+              class="rounded-2xl border-2 border-[var(--bsu-red)]/20 bg-white px-5 py-4 text-center shadow-sm"
+            >
+              <p class="text-xs font-medium uppercase tracking-wider text-[var(--bsu-ink-3)]">
+                Active visitors
+              </p>
+              <p
+                class="font-display mt-1 text-3xl font-bold tabular text-[var(--bsu-red)]"
+              >
+                {{ activeCount }}
+              </p>
+            </div>
+            <router-link to="/security/visitors/status">
+              <AppButton variant="primary" size="lg">
+                Open visitor status →
+              </AppButton>
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 3-up info grid (asymmetric on lg) -->
     <section class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
       <div class="grid gap-4 lg:grid-cols-12">
