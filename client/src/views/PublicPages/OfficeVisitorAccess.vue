@@ -90,6 +90,33 @@
             #{{ submittedLogId }}
           </p>
         </div>
+
+        <router-link
+          :to="{
+            path: '/navigate',
+            query: { to: office.id, name: office.office_name },
+          }"
+          class="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-base font-bold text-[var(--bsu-red)] shadow-lg transition-transform hover:scale-[1.02] active:scale-100"
+        >
+          <svg
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 11l19-9-9 19-2-8-8-2z"
+            />
+          </svg>
+          Navigate with AR →
+        </router-link>
+        <p class="mt-2 text-xs text-white/70">
+          Opens your camera and shows the way to
+          {{ office.office_name }}.
+        </p>
       </div>
 
       <!-- Destination picker (only when no officeId in URL) -->

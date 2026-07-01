@@ -49,6 +49,16 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    // AR navigation — opens the device camera and renders a 3D
+    // arrow toward the destination office. Multiset VPS is wired
+    // via env (VITE_MULTISET_API_KEY, VITE_MULTISET_MAP_ID);
+    // manual bearing slider is the fallback.
+    path: "/navigate",
+    name: "NavAr",
+    component: () => import("../views/PublicPages/NavAr.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
     path: "/qr-code",
     name: "QRCode",
     component: ShowQr,
