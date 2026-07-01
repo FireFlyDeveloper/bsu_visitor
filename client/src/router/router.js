@@ -2,7 +2,6 @@ import { createWebHistory, createRouter } from "vue-router";
 import { useUserStore } from "../store/user.js";
 import LoginPage from "../views/AuthPages/LoginPage.vue";
 import VisitorLogs from "../views/VisitorPages/VisitorLogs.vue";
-import VisitorAccess from "../views/VisitorPages/VisitorAccess.vue";
 import AdminDashboard from "../views/AdminPages/Dashboard.vue";
 import UserList from "../views/AdminPages/UserList.vue";
 import Register from "../views/AdminPages/Register.vue";
@@ -24,12 +23,6 @@ import ShowQr from "../views/VisitorPages/ShowQr.vue";
 
 const routes = [
   { path: "/", name: "Home", component: HomePage },
-  {
-    path: "/visitor-access/:token",
-    name: "VisitorAccess",
-    component: VisitorAccess,
-    meta: { requiresAuth: false },
-  },
   {
     // Public per-office fixed-QR landing page.
     // Visitors scan the QR stuck on the office door → land here

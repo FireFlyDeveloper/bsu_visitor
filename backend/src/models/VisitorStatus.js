@@ -60,9 +60,8 @@ class VisitorStatus {
     const rows = db
       .prepare(
         `
-    SELECT 
+    SELECT
       l.*,
-      vl.token,
       v.fullname AS visitor_name,
       v.contact_number,
       v.address AS visitor_address,
@@ -71,14 +70,7 @@ class VisitorStatus {
     JOIN visitors v ON v.id = l.visitor_id
     JOIN offices o ON o.id = l.office_id
     JOIN users u ON u.office_id = l.office_id
-    LEFT JOIN visitor_links vl 
-      ON vl.id = (
-        SELECT id FROM visitor_links 
-        WHERE visitor_id = l.visitor_id 
-        ORDER BY created_at DESC 
-        LIMIT 1
-      )
-    WHERE 
+    WHERE
       u.id = ?
       AND l.status = ?
       AND l.office_id = u.office_id

@@ -1,5 +1,4 @@
 import Visitor from "../models/Visitor.js";
-import VisitorLink from "../models/VisitorLink.js";
 import VisitLog from "../models/VisitLog.js";
 
 class VisitorLogController {
@@ -70,13 +69,6 @@ class VisitorLogController {
         logged_by: req.user?.id || null,
       });
 
-      const token = VisitorLink.create(visitor.id, parsedOfficeId);
-
-      const origin =
-        process.env.CLIENT_URL || `${req.protocol}://${req.get("host")}`;
-
-      const link = `${origin}/visitor-access/${token}`;
-
       const baseUrl = `${req.protocol}://${req.get("host")}`;
 
       if (visitor.img) {
@@ -86,8 +78,6 @@ class VisitorLogController {
       return res.status(201).json({
         visitor,
         logId,
-        link,
-        expires_in_seconds: 3600,
       });
     } catch (error) {
       return res.status(500).json({ error: error.message });

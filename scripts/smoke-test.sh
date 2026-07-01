@@ -56,8 +56,6 @@ jget() { python3 -c "import json; d=json.load(open('$1')); print(d$2)"; }
 
 echo "=== Phase 1: Public + auth ==="
 T "health" 200 GET /api/health "" ""
-T "visitor-links (empty)" 200 GET /api/visitor-links "" ""
-T "visitor-links/nonexistent" 404 GET /api/visitor-links/nonexistent "" ""
 T "admin login" 200 POST /api/users/login '{"username":"admin","password":"admin123"}' "$JAR"
 T "me (admin)" 200 GET /api/users/me "" "$JAR"
 
@@ -72,18 +70,8 @@ echo "Visitor ID = $VID"
 echo
 echo "=== Phase 3: Visit lifecycle (with image) ==="
 T "register visit" 201 POST /api/visit-logs/register "@visitor_id=$VID&office_id=1&purpose=Test" "$JAR"
-LINK=$(jget /tmp/_body '["link"]')
-TOKEN="${LINK##*/}"
-echo "Token = $TOKEN"
-T "visitor-links shows 1" 200 GET /api/visitor-links "" ""
-T "visitor-links/{token} active" 200 GET "/api/visitor-links/$TOKEN" "" ""
 T "visit-logs/1" 200 GET /api/visit-logs/1 "" "$JAR"
 T "complete visit" 200 PATCH "/api/visitor-status/1/status" '{"status":"completed"}' "$JAR"
-
-echo
-echo "=== Phase 4: Expired-link filter (regression) ==="
-T "visitor-links (empty after done)" 200 GET /api/visitor-links "" ""
-T "visitor-links/{token} -> 410" 410 GET "/api/visitor-links/$TOKEN" "" ""
 
 echo
 echo "=== Phase 5: Negative validations ==="

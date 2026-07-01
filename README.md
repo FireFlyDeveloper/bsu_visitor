@@ -133,8 +133,8 @@ bsu_visitor/
 | PATCH  | `/api/visit-logs/office/:id/status`           | admin         | Bulk update by office |
 | GET    | `/api/visit-logs/status/:status`              | staff         | Filter by status |
 | GET    | `/api/visit-logs/office/:id/status-count`     | any auth      | Status breakdown |
-| GET    | `/api/visitor-links`                          | any auth      | Active QR links only |
-| GET    | `/api/visitor-links/:token`                   | public        | Resolve token → visit (410 if ended) |
+| GET    | `/api/visitor-status/:status`                | any auth      | List visits by status |
+| GET    | `/api/visitor-status/office/:id/status-count` | any auth    | Count by status per office |
 | GET    | `/api/offices`                                | any auth      | List offices |
 | POST   | `/api/offices`                                | admin         | Create office |
 | GET    | `/api/roles`                                  | any auth      | List roles |
@@ -151,8 +151,7 @@ bsu_visitor/
 | 2 | `vite.config.js` hardcoded `http://192.168.1.5:8000` proxy | `VITE_API_PROXY_TARGET` env var, defaults to localhost |
 | 3 | `vite.config.js` hardcoded ngrok host in `allowedHosts` | `VITE_ALLOWED_HOSTS` env var (comma-separated) |
 | 4 | `cors()` hardcoded `intussusceptive-skimpily-ona.ngrok-free.dev` | Replaced with allowlist function reading `CLIENT_URL` (comma-separated) |
-| 5 | `GET /api/visitor-links` returned every QR ever issued — known bug "QR code still showing after status is left" | Joins `visit_logs` and filters to `time_out IS NULL AND status NOT IN (terminal)` |
-| 6 | `GET /api/visitor-links/:token` did not reject expired links | Returns **410 Gone** when underlying visit has ended |
+| 5 | QR-link system exposed via `/visitor-access/:token` and `/api/visitor-links` was unused after the public `/office` flow replaced it | Removed the route, view, store, controller, model, table, and the `LEFT JOIN visitor_links` blocks; no consumers left |
 | 7 | `UserController.create` required `office_id` for **all** roles via `requiresOffice()` | Only `staff` (role_id 3) requires it; `admin` and `security` are exempt |
 | 8 | No minimum password length check | Reject passwords shorter than 6 chars |
 | 9 | `/api/security-guard/visitors/active` missing (called for in `doc/visit_logs.md`) | Implemented using `VisitLog.findActiveVisits`, enriches with visitor + office names |

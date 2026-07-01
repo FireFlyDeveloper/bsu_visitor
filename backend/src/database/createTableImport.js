@@ -4,5 +4,4 @@ import "./createVisitorTable.js";
 import "./createUserTable.js";
 import "./createActivityLogTable.js";
 import "./createVisitorLogTable.js";
-import "./createVisitorLink.js";
 import "./migrateLeftAt.js";

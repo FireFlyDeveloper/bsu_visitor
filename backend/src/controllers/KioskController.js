@@ -1,6 +1,5 @@
 import Visitor from "../models/Visitor.js";
 import VisitLog from "../models/VisitLog.js";
-import VisitorLink from "../models/VisitorLink.js";
 
 class KioskController {
   static register(req, res) {
@@ -63,11 +62,7 @@ class KioskController {
         status: "pending",
       });
 
-      // Create a visitor link token (reused for future QR navigation feature)
-      const token = VisitorLink.create(visitor.id, parsedOfficeId);
-
       const baseUrl = `${req.protocol}://${req.get("host")}`;
-      const link = `${baseUrl}/visitor-access/${token}`;
 
       if (visitor.img) {
         visitor.img = `${baseUrl}/${visitor.img}`;
@@ -76,9 +71,7 @@ class KioskController {
       return res.status(201).json({
         visitor,
         logId,
-        link,
         office_id: parsedOfficeId,
-        token,
       });
     } catch (error) {
       console.error("kiosk register error:", error);

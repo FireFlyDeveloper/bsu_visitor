@@ -90,8 +90,7 @@
               <tr
                 v-for="log in visitorLogStore.logs"
                 :key="log.id"
-                @click="goToVisitorAccess(log)"
-                class="cursor-pointer transition-colors hover:bg-[var(--paper-2)]/40"
+                class="cursor-default transition-colors hover:bg-[var(--paper-2)]/40"
               >
                 <td class="whitespace-nowrap px-6 py-3.5 font-mono text-xs tabular text-[var(--ink-2)]">
                   {{ formatDateTime(log.time_in) }}
@@ -167,30 +166,18 @@
 </template>
 
 <script setup>
-import { useRouter } from "vue-router";
 import { computed, onMounted, ref } from "vue";
 import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useVisitorLogStore } from "@/store/visitorLog";
-import { useToast } from "@/composables/useToast";
 
 const visitorLogStore = useVisitorLogStore();
-const router = useRouter();
-const toast = useToast();
 
 const filterType = ref("all");
 const selectedDate = ref("");
 const selectedMonth = ref("");
 const visitorName = ref("");
-
-function goToVisitorAccess(log) {
-  if (!log.token) {
-    toast.warn("No access link for this visitor.");
-    return;
-  }
-  router.push(`/visitor-access/${log.token}`);
-}
 
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(visitorLogStore.total / visitorLogStore.perPage)),
