@@ -188,13 +188,13 @@ const routes = [
   },
   {
     path: "/security",
-    name: "SecurityPanel",
     component: AdminLayout,
     children: [
       {
         // /security → visitor status (the dashboard has been merged
         // into the home page; security opens Visitor Status directly)
         path: "",
+        name: "SecurityPanel",
         redirect: { name: "SecurityVisitorStatus" },
       },
       {

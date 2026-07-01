@@ -149,6 +149,40 @@ export const useUserStore = defineStore("user", {
       }
     },
 
+    async updateAccount(id, { fullname, username, role_id, office_id, password }) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const normalizedOfficeId =
+          office_id === "" || office_id === undefined || office_id === null
+            ? null
+            : office_id;
+
+        // Don't send an empty password - backend treats it as "no change".
+        const payload = {
+          fullname,
+          username,
+          role_id,
+          office_id: normalizedOfficeId,
+          ...(password ? { password } : {}),
+        };
+
+        const response = await fetch(`${API_BASE}/users/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        const data = await handleResponse(response);
+        return data;
+      } catch (error) {
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     setCurrentUser(user) {
       this.currentUser = user;
     },

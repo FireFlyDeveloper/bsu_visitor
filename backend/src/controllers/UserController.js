@@ -197,7 +197,7 @@ class UserController {
   static update(req, res) {
     try {
       const { id } = req.params;
-      const { fullname, username, role_id, office_id } = req.body;
+      const { fullname, username, role_id, office_id, password } = req.body;
       const normalizedRoleId =
         role_id !== undefined ? Number(role_id) : undefined;
       const normalizedOfficeId =
@@ -217,7 +217,16 @@ class UserController {
       if (UserController.requiresOffice(nextRoleId) && !nextOfficeId) {
         return res
           .status(400)
-          .json({ error: "office_id is required for visitors" });
+          .json({ error: "office_id is required for staff accounts" });
+      }
+
+      // Optional password reset — must be at least 6 chars if provided.
+      if (password !== undefined && password !== null && password !== "") {
+        if (String(password).length < 6) {
+          return res
+            .status(400)
+            .json({ error: "Password must be at least 6 characters" });
+        }
       }
 
       const success = User.update(id, {
@@ -225,6 +234,7 @@ class UserController {
         username: username || user.username,
         role_id: nextRoleId,
         office_id: nextOfficeId,
+        ...(password && { password }),
       });
 
       if (success) {

@@ -33,6 +33,7 @@
               <th class="px-6 py-3 font-semibold">Name</th>
               <th class="px-6 py-3 font-semibold">Username</th>
               <th class="px-6 py-3 font-semibold">Role</th>
+              <th class="px-6 py-3 font-semibold text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--line)]">
@@ -56,6 +57,31 @@
                   {{ roleName(user.role_id) }}
                 </span>
               </td>
+              <td class="px-6 py-4 text-right">
+                <button
+                  type="button"
+                  @click="openEdit(user)"
+                  :aria-label="`Edit ${user.fullname}`"
+                  class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--line)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--ink-2)] transition hover:border-red-700 hover:bg-red-50 hover:text-red-800 active:translate-y-px"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  Edit
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -70,14 +96,28 @@
         </template>
         <CreateUserForm @created="handleUserCreated" />
       </BaseModal>
+
+      <BaseModal v-model="showEditUser">
+        <template #header>
+          <h2 class="font-display text-xl font-bold">Edit user account</h2>
+        </template>
+        <EditAccountForm
+          v-if="editingUser"
+          :user="editingUser"
+          :current-user-id="currentUserId"
+          @updated="handleUserUpdated"
+          @cancel="showEditUser = false"
+        />
+      </BaseModal>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import BaseModal from "@/components/BaseModal.vue";
 import CreateUserForm from "@/components/CreateAccountForm.vue";
+import EditAccountForm from "@/components/EditAccountForm.vue";
 import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
@@ -86,6 +126,10 @@ import { stagger } from "@/composables/useStagger";
 
 const userStore = useUserStore();
 const showCreateUser = ref(false);
+const showEditUser = ref(false);
+const editingUser = ref(null);
+
+const currentUserId = computed(() => userStore.currentUser?.id ?? null);
 
 const roleMap = { 1: "Admin", 2: "Security", 3: "Staff" };
 const roleToneMap = {
@@ -99,6 +143,19 @@ const roleTone = (id) => roleToneMap[id] || "bg-[var(--paper-2)] text-[var(--ink
 async function handleUserCreated() {
   await userStore.fetchAllUsers();
   showCreateUser.value = false;
+}
+
+function openEdit(user) {
+  editingUser.value = { ...user };
+  showEditUser.value = true;
+}
+
+async function handleUserUpdated() {
+  await userStore.fetchAllUsers();
+  // Keep the edit modal open briefly so the user sees the "saved" state,
+  // then close it. Fetching before close ensures the next open shows fresh data.
+  showEditUser.value = false;
+  editingUser.value = null;
 }
 
 onMounted(() => userStore.fetchAllUsers());

@@ -119,22 +119,24 @@ class User {
   }
 
   static update(id, userData) {
-    const { fullname, username, role_id, office_id } = userData;
+    const { fullname, username, role_id, office_id, password } = userData;
     const normalizedOfficeId = office_id ?? null;
 
+    // Build the SET clause dynamically so we can optionally rewrite the password.
+    const fields = [fullname, username, role_id, normalizedOfficeId];
+    let passwordHash = null;
+    if (password) {
+      passwordHash = bcrypt.hashSync(password, 10);
+    }
+
     const stmt = db.prepare(`
-      UPDATE users 
-      SET fullname = ?, username = ?, role_id = ?, office_id = ?
+      UPDATE users
+      SET fullname = ?, username = ?, role_id = ?, office_id = ?,
+          password_hash = COALESCE(?, password_hash)
       WHERE id = ?
     `);
 
-    const result = stmt.run(
-      fullname,
-      username,
-      role_id,
-      normalizedOfficeId,
-      id,
-    );
+    const result = stmt.run(...fields, passwordHash, id);
     return result.changes > 0;
   }
 
