@@ -53,12 +53,8 @@
               Type: {{ office.type || "Unknown" }}
             </p>
             <div class="mt-4 text-sm text-slate-600 space-y-1">
-              <p><strong>Latitude:</strong> {{ office.latitude }}</p>
-              <p><strong>Longitude:</strong> {{ office.longitude }}</p>
               <p><strong>Distance:</strong> {{ formatDistance }} away</p>
               <p><strong>Direction:</strong> {{ direction }}</p>
-              <p><strong>Your Latitude:</strong> {{ currentLatitude }}</p>
-              <p><strong>Your Longitude:</strong> {{ currentLongitude }}</p>
             </div>
           </div>
         </div>

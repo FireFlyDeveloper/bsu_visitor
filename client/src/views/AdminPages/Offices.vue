@@ -29,8 +29,6 @@ async function saveOffice() {
   saving.value = true;
   const payload = {
     office_name: selectedOffice.value.name,
-    latitude: selectedOffice.value.latitude,
-    longitude: selectedOffice.value.longitude,
     type: selectedOffice.value.type,
     status: selectedOffice.value.status,
   };
@@ -123,9 +121,6 @@ function statusLabel(s) {
             <p class="mt-0.5 font-display font-semibold tabular">{{ office.queue_count ?? 0 }}</p>
           </div>
         </div>
-        <p class="mt-4 font-mono text-[0.6875rem] tabular text-[var(--ink-3)]">
-          {{ office.latitude || "—" }}, {{ office.longitude || "—" }}
-        </p>
       </button>
     </div>
 
@@ -146,16 +141,6 @@ function statusLabel(s) {
               <div>
                 <label class="label">Office name</label>
                 <input v-model="selectedOffice.name" type="text" class="input" />
-              </div>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="label">Latitude</label>
-                  <input v-model="selectedOffice.latitude" type="text" class="input" />
-                </div>
-                <div>
-                  <label class="label">Longitude</label>
-                  <input v-model="selectedOffice.longitude" type="text" class="input" />
-                </div>
               </div>
               <div>
                 <label class="label">Type</label>
