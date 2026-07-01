@@ -52,10 +52,6 @@
             <p class="mt-1 text-sm text-slate-600">
               Type: {{ office.type || "Unknown" }}
             </p>
-            <div class="mt-4 text-sm text-slate-600 space-y-1">
-              <p><strong>Distance:</strong> {{ formatDistance }} away</p>
-              <p><strong>Direction:</strong> {{ direction }}</p>
-            </div>
           </div>
         </div>
 
