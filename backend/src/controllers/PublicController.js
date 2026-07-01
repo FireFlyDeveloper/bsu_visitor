@@ -92,6 +92,13 @@ class PublicController {
         status: "pending",
       });
 
+      // Build an absolute URL for the visitor's photo (if any) so the
+      // client can <img src=...> it on the success screen.
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const visitorImg = visitor.img
+        ? `${baseUrl}/${visitor.img}`
+        : null;
+
       return res.status(201).json({
         ok: true,
         logId,
@@ -99,6 +106,7 @@ class PublicController {
         visitor: {
           id: visitor.id,
           fullname: visitor.fullname,
+          img: visitorImg,
         },
       });
     } catch (err) {

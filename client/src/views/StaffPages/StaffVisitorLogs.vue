@@ -154,20 +154,27 @@
 
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
+                  <img
+                    v-if="log.visitor_img"
+                    :src="log.visitor_img"
+                    :alt="log.visitor_name"
+                    class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                    loading="lazy"
+                    @error="(e) => (e.target.style.display = 'none')"
+                  />
                   <div
-                    class="w-8 h-8 rounded-full bg-linear-to-br from-red-100 to-red-50 flex items-center justify-center"
+                    v-else
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-50 text-xs font-semibold uppercase text-red-700 ring-1 ring-slate-200"
                   >
-                    <span class="text-red-700 font-medium text-xs">
-                      {{ log.visitor_name.charAt(0).toUpperCase() }}
-                    </span>
+                    {{ (log.visitor_name || "?").charAt(0) }}
                   </div>
-                  <div>
-                    <div class="font-semibold text-slate-800 capitalize">
+                  <div class="min-w-0">
+                    <p class="truncate font-semibold text-slate-800 capitalize">
                       {{ log.visitor_name }}
-                    </div>
-                    <div class="text-xs text-slate-500">
+                    </p>
+                    <p class="truncate text-xs text-slate-500">
                       {{ log.contact_number }}
-                    </div>
+                    </p>
                   </div>
                 </div>
               </td>

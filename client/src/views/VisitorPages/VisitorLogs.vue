@@ -97,8 +97,28 @@
                   {{ formatDateTime(log.time_in) }}
                 </td>
                 <td class="px-6 py-3.5">
-                  <p class="font-semibold">{{ log.visitor_name }}</p>
-                  <p class="text-xs text-[var(--ink-3)] tabular">{{ log.contact_number || "—" }}</p>
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="log.visitor_img"
+                      :src="log.visitor_img"
+                      :alt="log.visitor_name"
+                      class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-[var(--line)]"
+                      loading="lazy"
+                      @error="(e) => (e.target.style.display = 'none')"
+                    />
+                    <div
+                      v-else
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--paper-2)] text-xs font-semibold uppercase text-[var(--ink-2)] ring-1 ring-[var(--line)]"
+                    >
+                      {{ (log.visitor_name || "?").charAt(0) }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate font-semibold">{{ log.visitor_name }}</p>
+                      <p class="truncate text-xs text-[var(--ink-3)] tabular">
+                        {{ log.contact_number || "—" }}
+                      </p>
+                    </div>
+                  </div>
                 </td>
                 <td class="px-6 py-3.5">{{ log.office_name }}</td>
                 <td class="px-6 py-3.5 text-[var(--ink-2)]">{{ log.purpose || "—" }}</td>

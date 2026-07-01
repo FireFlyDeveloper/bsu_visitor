@@ -158,6 +158,15 @@ class VisitorLogController {
         offset,
       });
 
+      // Convert the visitor's relative `img` path into an absolute URL
+      // so the client can <img src=...> it without further wiring.
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      for (const row of rows) {
+        if (row.visitor_img) {
+          row.visitor_img = `${baseUrl}/${row.visitor_img}`;
+        }
+      }
+
       return res.json({
         logs: rows,
         total,
@@ -235,6 +244,14 @@ class VisitorLogController {
         limit: Number(limit),
         offset: Number(offset),
       });
+
+      // Convert the visitor's relative `img` path into an absolute URL.
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      for (const row of result.rows) {
+        if (row.visitor_img) {
+          row.visitor_img = `${baseUrl}/${row.visitor_img}`;
+        }
+      }
 
       return res.json({
         success: true,

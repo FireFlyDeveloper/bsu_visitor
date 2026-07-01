@@ -34,6 +34,11 @@
               campus activity.
             </p>
             <div class="mt-8 flex flex-wrap gap-3">
+              <router-link to="/office">
+                <AppButton variant="primary" size="lg">
+                  Register a visit
+                </AppButton>
+              </router-link>
               <router-link to="/admin/dashboard">
                 <AppButton variant="secondary" size="lg">
                   Open dashboard

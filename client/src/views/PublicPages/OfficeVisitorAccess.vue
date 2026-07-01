@@ -73,6 +73,19 @@
           </svg>
         </div>
         <h1 class="mt-6 text-3xl font-bold">You're registered</h1>
+        <div
+          v-if="submittedVisitorImg"
+          class="mt-5 flex flex-col items-center"
+        >
+          <img
+            :src="submittedVisitorImg"
+            :alt="form.fullname"
+            class="h-24 w-24 rounded-full border-4 border-white/30 object-cover shadow-xl"
+          />
+          <p class="mt-3 text-sm font-semibold text-white/90">
+            {{ form.fullname }}
+          </p>
+        </div>
         <p class="mt-3 max-w-sm text-sm text-white/90">
           Please proceed to
           <span class="font-bold uppercase tracking-wider">
@@ -304,6 +317,7 @@ const formError = ref("");
 const submitting = ref(false);
 const submitted = ref(false);
 const submittedLogId = ref(null);
+const submittedVisitorImg = ref(null);
 
 // Destination picker state
 const offices = ref([]);
@@ -392,6 +406,7 @@ async function onSubmit() {
       return;
     }
     submittedLogId.value = data.logId;
+    submittedVisitorImg.value = data.visitor?.img || null;
     submitted.value = true;
   } catch (e) {
     formError.value = "Network error. Please check your connection.";
