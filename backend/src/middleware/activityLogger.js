@@ -91,7 +91,22 @@ export const activityLogger = (req, res, next) => {
       });
     } catch (err) {
       // Never break the request lifecycle because of logging.
-      console.error("Failed to write activity log:", err);
+      // SQLITE_READONLY_DBMOVED happens when another process (typically
+      // a re-seed) has unlinked the DB file from under us — that's an
+      // operational signal, not a real error, so just log a short line
+      // and move on. Full stack only for other error codes.
+      const code = err?.code;
+      if (
+        code === "SQLITE_READONLY" ||
+        code === "SQLITE_READONLY_DBMOVED" ||
+        code === "SQLITE_BUSY"
+      ) {
+        console.warn(
+          `[activityLogger] skipped log (${code}); DB likely re-seeded concurrently.`,
+        );
+      } else {
+        console.error("Failed to write activity log:", err);
+      }
     }
   });
 
