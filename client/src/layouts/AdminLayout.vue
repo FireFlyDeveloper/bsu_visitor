@@ -11,10 +11,28 @@
       <router-view />
     </main>
     <Toast />
+    <!--
+      Floating global alarm banner. Plays /alarm.mp3 and surfaces a
+      "Sign out" button on every page when a visit is overdue. Only
+      renders anything when overdue > 0, so non-security users never
+      see it.
+    -->
+    <SecurityAlarmWidget v-if="showSecurityAlarm" />
   </div>
 </template>
 
 <script setup>
+import { computed } from "vue";
 import Navbar from "@/components/Navbar.vue";
 import Toast from "@/components/Toast.vue";
+import SecurityAlarmWidget from "@/components/SecurityAlarmWidget.vue";
+import { useUserStore } from "@/store/user";
+
+const userStore = useUserStore();
+// Use the same getter the rest of the app uses (`userRole` returns
+// `currentUser.role_id`, which is the canonical security/admin/staff
+// discriminator). role_id 2 = security.
+const showSecurityAlarm = computed(
+  () => Number(userStore.userRole) === 2,
+);
 </script>

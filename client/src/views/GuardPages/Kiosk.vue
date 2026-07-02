@@ -208,6 +208,7 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useOfficeStore } from "@/store/office.js";
 import { useVisitorLogStore } from "@/store/visitorLog.js";
 import { useToast } from "@/composables/useToast";
+import { useSecurityAlarm } from "@/composables/useSecurityAlarm";
 import AppButton from "@/components/AppButton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import KioskSuccessModal from "@/components/KioskSuccessModal.vue";
@@ -237,8 +238,12 @@ const signingOut = ref(null);
 const recentActivity = ref([]);
 
 let pollHandle = null;
-let alarmAudio = null;
-let alarmPlaying = false;
+
+// Alarm audio + overdue polling are owned by the global
+// `useSecurityAlarm` composable so the alarm plays on every
+// security page, not just this one. Here we just refresh the
+// local `overdue` list (for the inline panel) and the live feed.
+const { refresh: refreshOverdue } = useSecurityAlarm();
 
 async function fetchOffices() {
   await officeStore.fetchOffices();
@@ -311,19 +316,9 @@ async function pollAll() {
   ]);
   overdue.value = overdueRes.overdue || [];
   recentActivity.value = (activityRes.logs || []).slice(0, 8);
-  updateAlarm();
-}
-
-function updateAlarm() {
-  if (!alarmAudio) return;
-  if (overdue.value.length > 0 && !alarmPlaying) {
-    alarmAudio.play().catch(() => {});
-    alarmPlaying = true;
-  } else if (overdue.value.length === 0 && alarmPlaying) {
-    alarmAudio.pause();
-    alarmAudio.currentTime = 0;
-    alarmPlaying = false;
-  }
+  // Tell the global alarm to re-evaluate the audio state based on
+  // the latest count. The composable owns the Audio element.
+  await refreshOverdue();
 }
 
 async function onSignOut(log) {
@@ -348,18 +343,11 @@ function formatTime(value) {
 
 onMounted(async () => {
   await fetchOffices();
-  alarmAudio = new Audio("/alarm.mp3");
-  alarmAudio.loop = true;
   await pollAll();
   pollHandle = setInterval(pollAll, 5000);
 });
 
 onUnmounted(() => {
   if (pollHandle) clearInterval(pollHandle);
-  if (alarmAudio) {
-    alarmAudio.pause();
-    alarmAudio.currentTime = 0;
-  }
-  alarmPlaying = false;
 });
 </script>

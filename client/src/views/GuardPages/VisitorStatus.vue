@@ -172,12 +172,14 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useVisitorLogStore } from "@/store/visitorLog";
 import { useToast } from "@/composables/useToast";
+import { useSecurityAlarm } from "@/composables/useSecurityAlarm";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { stagger } from "@/composables/useStagger";
 
 const store = useVisitorLogStore();
 const toast = useToast();
+const { refresh: refreshOverdue } = useSecurityAlarm();
 
 const alarmMinutes = ref(parseInt(localStorage.getItem("visitor_alarm_minutes") || "30"));
 const now = ref(Date.now());
@@ -186,10 +188,13 @@ const alarmEnabled = ref(true);
 const overdue = ref([]);
 const overdueCount = computed(() => overdue.value.length);
 const signingOut = ref(null);
-let overduePollHandle = null;
 
-const alarmAudio = new Audio("/alarm.mp3");
-let alarmPlayed = false;
+// Audio element is owned by the global useSecurityAlarm composable
+// (mounted in the AdminLayout). The page-level "active table" alarm
+// trigger (a row's time-on-site crossing the threshold) delegates to
+// the composable so the same audio plays regardless of which page
+// the guard is currently on.
+let activePollHandle = null;
 
 watch(alarmMinutes, (v) => localStorage.setItem("visitor_alarm_minutes", String(v)));
 
@@ -211,11 +216,7 @@ function computeTimeSpent(log) {
 
 function toggleAlarm() {
   alarmEnabled.value = !alarmEnabled.value;
-  if (!alarmEnabled.value) {
-    alarmAudio.pause();
-    alarmAudio.currentTime = 0;
-    alarmPlayed = false;
-  }
+  // Toggle handled at the composable level when we refresh below.
 }
 
 const logsWithTime = computed(() =>
@@ -227,15 +228,21 @@ const logsWithTime = computed(() =>
     }),
 );
 
-watch(logsWithTime, (logs) => {
-  if (!alarmEnabled.value) return;
-  const hasAlarm = logs.some((l) => l.isAlarm) || overdue.value.length > 0;
-  if (hasAlarm && !alarmPlayed) {
-    alarmAudio.play().catch(() => {});
-    alarmPlayed = true;
-  }
-  if (!hasAlarm) alarmPlayed = false;
-}, { deep: true });
+// Active table alarm trigger delegates to the global composable so
+// the same audio plays on kiosk, office-status, etc.
+watch(
+  logsWithTime,
+  async (logs) => {
+    if (!alarmEnabled.value) return;
+    const hasAlarm =
+      logs.some((l) => l.isAlarm) || overdue.value.length > 0;
+    if (hasAlarm) {
+      // Force a re-poll so the composable starts the audio.
+      await refreshOverdue();
+    }
+  },
+  { deep: true },
+);
 
 async function markAsLeft(log) {
   try {
@@ -270,12 +277,8 @@ function formatTime(value) {
 async function pollOverdue() {
   const data = await store.fetchOverdue();
   overdue.value = data.overdue || [];
-  if (overdue.value.length > 0 && alarmEnabled.value && !alarmPlayed) {
-    alarmAudio.play().catch(() => {});
-    alarmPlayed = true;
-  } else if (overdue.value.length === 0 && !logsWithTime.value.some((l) => l.isAlarm)) {
-    alarmPlayed = false;
-  }
+  // Sync the global composable so audio state is consistent across pages.
+  await refreshOverdue();
 }
 
 async function onSignOut(log) {
@@ -297,12 +300,13 @@ onMounted(() => {
   store.fetchVisitLogs();
   timer = setInterval(() => { now.value = Date.now(); }, 1000);
   pollOverdue();
-  overduePollHandle = setInterval(pollOverdue, 5000);
+  activePollHandle = setInterval(pollOverdue, 5000);
 });
 
 onUnmounted(() => {
   clearInterval(timer);
-  if (overduePollHandle) clearInterval(overduePollHandle);
-  alarmAudio.pause();
+  if (activePollHandle) clearInterval(activePollHandle);
+  // Don't pause audio here — the composable owns it and it may need
+  // to keep playing if the user navigates to a different security page.
 });
 </script>
