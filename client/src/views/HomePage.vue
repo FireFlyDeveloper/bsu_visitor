@@ -34,14 +34,17 @@
               campus activity.
             </p>
             <div class="mt-8 flex flex-wrap gap-3">
-              <router-link to="/office">
+              <router-link to="/admin/dashboard">
                 <AppButton variant="primary" size="lg">
-                  Register a visit
+                  Open dashboard
                 </AppButton>
               </router-link>
-              <router-link to="/admin/dashboard">
+              <router-link
+                v-if="userStore.isLoggedIn"
+                to="/office"
+              >
                 <AppButton variant="secondary" size="lg">
-                  Open dashboard
+                  AR navigation
                 </AppButton>
               </router-link>
             </div>
