@@ -241,7 +241,14 @@ class VisitLog {
     return result.changes > 0;
   }
 
-  static findOverdue({ limit = 50 } = {}) {
+  static findOverdue({ limit = 50, overdueMinutes = 30 } = {}) {
+    // An overdue visit is one that the office has already marked
+    // 'completed' (i.e. the visit itself is over) but the visitor
+    // has not yet left the guard house. The 30-minute grace window
+    // starts when the visit was completed (time_out), so the alarm
+    // only fires once that window has elapsed. Rows where time_out
+    // is NULL (legacy data) are kept so they cannot silently slip
+    // through the cracks.
     return db
       .prepare(
         `
@@ -257,17 +264,27 @@ class VisitLog {
         v.fullname AS visitor_name,
         v.contact_number,
         v.img AS visitor_img,
-        o.office_name
+        o.office_name,
+        CASE
+          WHEN l.time_out IS NULL THEN NULL
+          ELSE CAST(
+            (julianday('now') - julianday(l.time_out)) * 24 * 60 AS INTEGER
+          )
+        END AS minutes_since_completed
       FROM visit_logs l
       JOIN visitors v ON v.id = l.visitor_id
       JOIN offices o ON o.id = l.office_id
       WHERE l.status = 'completed'
         AND l.left_at IS NULL
-      ORDER BY l.time_out DESC
+        AND (
+          l.time_out IS NULL
+          OR datetime(l.time_out, '+' || ? || ' minutes') <= datetime('now')
+        )
+      ORDER BY l.time_out DESC NULLS LAST
       LIMIT ?
     `,
       )
-      .all(limit);
+      .all(overdueMinutes, limit);
   }
 
   // This method is for staff users to quickly view pending visits related to their assigned offices
