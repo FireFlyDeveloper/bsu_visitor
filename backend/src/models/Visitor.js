@@ -56,22 +56,25 @@ class Visitor {
   }
 
   static update(id, visitorData) {
-    const { fullname, contact_number, address, id_type, img } = visitorData;
-
-    const stmt = db.prepare(`
-      UPDATE visitors 
-      SET fullname = ?, contact_number = ?, address = ?, id_type = ?, img = ?
-      WHERE id = ?
-    `);
-
-    const result = stmt.run(
-      fullname,
-      contact_number,
-      address,
-      id_type,
-      img,
-      id,
+    // Build a dynamic SET clause so callers can pass a partial payload
+    // (e.g. kiosk re-register reuses an existing visitor and only
+    // updates the photo). The previous full-column UPDATE was a footgun
+    // that set unset fields to NULL, tripping the NOT NULL constraint.
+    const ALLOWED = ["fullname", "contact_number", "address", "id_type", "img"];
+    const fields = Object.keys(visitorData || {}).filter(
+      (k) => ALLOWED.includes(k) && visitorData[k] !== undefined,
     );
+    if (fields.length === 0) {
+      // Nothing to update — return the row as-is so callers can still
+      // observe .changes.
+      return db.prepare("SELECT * FROM visitors WHERE id = ?").get(id);
+    }
+    const setClause = fields.map((f) => `${f} = ?`).join(", ");
+    const values = fields.map((f) => visitorData[f]);
+    const stmt = db.prepare(
+      `UPDATE visitors SET ${setClause} WHERE id = ?`,
+    );
+    const result = stmt.run(...values, id);
     return result.changes > 0;
   }
 

@@ -112,6 +112,17 @@ multipart_ck "kiosk register (multipart w/ photo)" 201 "/api/security-guard/kios
 LOG_ID=$(jget /tmp/_body '["logId"]')
 echo "  → log_id = $LOG_ID"
 
+# Re-register the same visitor (same contact_number) — this hits the
+# create-or-find path's UPDATE branch. Regression test for the
+# `NOT NULL constraint failed: visitors.fullname` bug where Visitor.update
+# was setting all 5 columns to NULL except the supplied field.
+multipart_ck "kiosk re-register (same contact_number, hits Visitor.update)" 201 "/api/security-guard/kiosk/register" "$SECJAR" \
+  -F "fullname=IntegrationVisitor" -F "contact_number=09170000001" \
+  -F "address=BSU Main" -F "office_id=1" -F "purpose=Repeat" \
+  -F "img=@/tmp/tiny.png"
+LOG_ID_REPEAT=$(jget /tmp/_body '["logId"]')
+echo "  → repeat log_id = $LOG_ID_REPEAT (visitor row unchanged, new log row)"
+
 # Kiosk negative cases
 ck "kiosk register (missing fields, 400)" 400 POST /api/security-guard/kiosk/register "$SECJAR" '{}'
 # Kiosk as staff (forbidden)
