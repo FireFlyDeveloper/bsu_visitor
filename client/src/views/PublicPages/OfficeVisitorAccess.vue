@@ -9,7 +9,7 @@
           <img
             src="/logo/BatStateU-NEU-Logo-1-300x282.png"
             alt="BSU"
-            class="h-10 w-10 brightness-0 invert"
+            class="h-10 w-10"
           />
           <div>
             <p class="font-display text-sm font-bold tracking-tight">

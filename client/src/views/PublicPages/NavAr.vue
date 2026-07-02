@@ -185,6 +185,20 @@ let deviceHeading = 0; // compass heading from DeviceOrientationEvent
 async function onStart() {
   starting.value = true;
   errorMsg.value = "";
+  // Some browsers / iOS / non-secure contexts leave `mediaDevices`
+  // undefined. Surface a clear message instead of crashing.
+  if (
+    typeof navigator === "undefined" ||
+    !navigator.mediaDevices ||
+    typeof navigator.mediaDevices.getUserMedia !== "function"
+  ) {
+    errorMsg.value =
+      "Your browser does not expose a camera API here. " +
+      "Open this page over HTTPS (or on http://localhost) in a modern " +
+      "mobile browser (Safari iOS 14.5+, Chrome, Firefox).";
+    starting.value = false;
+    return;
+  }
   try {
     await startCamera();
     await initThree();

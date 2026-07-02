@@ -265,7 +265,7 @@
           <img
             src="/logo/BatStateU-NEU-Logo-1-300x282.png"
             alt="BSU"
-            class="h-8 w-8 brightness-0 invert"
+            class="h-8 w-8"
           />
           <span>© {{ new Date().getFullYear() }} Batangas State University</span>
         </div>
