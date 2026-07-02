@@ -2,14 +2,15 @@
 # scripts/smoke-test.sh
 #
 # End-to-end API smoke test for the BSU Visitor backend.
-# Wipes the DB, seeds it, starts the server, runs endpoint tests, tears down.
+# Stops the running backend, wipes the DB, seeds it, starts the server,
+# runs endpoint tests, tears down.
 #
 # Usage:  npm run test:api        (from project root)
 #         bash scripts/smoke-test.sh
 #
 # Override the port with PORT=8000 npm run test:api
 set -u
-BASE="http://localhost:${PORT:-8000}"
+BASE="http://localhost:${PORT:-8765}"
 JAR=/tmp/bsu-admin.jar
 SECJAR=/tmp/bsu-sec.jar
 STJAR=/tmp/bsu-staff.jar
@@ -53,6 +54,30 @@ T() {
   fi
 }
 jget() { python3 -c "import json; d=json.load(open('$1')); print(d$2)"; }
+
+echo "=== Phase 0: Re-seed DB for idempotency ==="
+# Tests below create sec1/staff1/visitors; second run must start clean.
+# We must stop the running backend first so it releases the SQLite file handle.
+echo "[smoke] stopping any running backend on :${PORT:-8765}..."
+pkill -f "node src/server.js" 2>/dev/null
+sleep 1
+node "$(dirname "$0")/seed-fresh.mjs" || { echo "FATAL: seed-fresh failed"; exit 1; }
+
+echo "[smoke] starting backend on :${PORT:-8765}..."
+( cd "$(dirname "$0")/../backend" && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+for i in {1..10}; do
+  sleep 1
+  curl -s -o /dev/null --max-time 1 http://localhost:${PORT:-8765}/api/health && break
+  [[ $i -eq 10 ]] && { echo "FATAL: backend did not start"; cat /tmp/bsu_backend_smoke.log; exit 1; }
+done
+echo "[smoke] backend ready (pid $(cat /tmp/bsu_backend_smoke.pid))"
+
+cleanup() {
+  echo
+  echo "[smoke] tearing down backend pid $(cat /tmp/bsu_backend_smoke.pid 2>/dev/null)"
+  [[ -f /tmp/bsu_backend_smoke.pid ]] && kill "$(cat /tmp/bsu_backend_smoke.pid)" 2>/dev/null
+}
+trap cleanup EXIT
 
 echo "=== Phase 1: Public + auth ==="
 T "health" 200 GET /api/health "" ""
@@ -110,6 +135,17 @@ T "kiosk register no photo" 400 POST /api/security-guard/kiosk/register '{"fulln
 T "non-sec kiosk (forbidden)" 403 POST /api/security-guard/kiosk/register '{"fullname":"X","contact_number":"0917","address":"X","office_id":1}' "$STJAR"
 
 # Overdue list before mark-done (visit 1 is already completed; should appear)
+# NOTE: the overdue query enforces a 30-min window, so a freshly-completed
+# visit won't appear. Stop the backend, back-date the row, restart, then check.
+echo "[smoke] back-dating visit 1 to trigger overdue (30-min window)..."
+pkill -f "node src/server.js" 2>/dev/null
+sleep 1
+sqlite3 backend/src/database/database.db "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=1;" 2>/dev/null || true
+( cd backend && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+for i in {1..10}; do
+  sleep 1
+  curl -s -o /dev/null --max-time 1 "http://localhost:${PORT:-8765}/api/health" && break
+done
 T "overdue list contains visit 1" 200 GET /api/visit-logs/overdue '' "$SECJAR"
 # Verify the JSON has at least 1 entry
 OVERDUE_TOTAL=$(jget /tmp/_body '["total"]')

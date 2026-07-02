@@ -4,6 +4,10 @@ import VisitLog from "../models/VisitLog.js";
 class KioskController {
   static register(req, res) {
     try {
+      // Guard against undefined req.body (happens with no body / no Content-Type
+      // / no multer fields) so we return a clean 400 instead of a 500 from
+      // the destructure below.
+      const body = req.body || {};
       const {
         fullname,
         contact_number,
@@ -11,7 +15,7 @@ class KioskController {
         id_type = "",
         office_id,
         purpose = "",
-      } = req.body;
+      } = body;
 
       if (!fullname || !contact_number || !office_id) {
         return res.status(400).json({

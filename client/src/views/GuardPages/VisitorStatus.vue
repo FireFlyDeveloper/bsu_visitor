@@ -244,20 +244,27 @@ watch(
   { deep: true },
 );
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 async function markAsLeft(log) {
   try {
-    await fetch(`/api/visitor-status/${log.id}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    const response = await fetch(
+      `${API_BASE}/visitor-status/${log.id}/status`,
+      {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "left" }),
       },
-      body: JSON.stringify({ status: "left" }),
-    });
+    );
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body?.error || `HTTP ${response.status}`);
+    }
     store.logs = store.logs.filter((l) => l.id !== log.id);
     toast.success(`${log.visitor_name} marked left`);
   } catch (err) {
-    toast.error("Could not mark left");
+    toast.error(err?.message || "Could not mark left");
   }
 }
 

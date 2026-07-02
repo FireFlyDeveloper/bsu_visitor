@@ -82,11 +82,12 @@ class OfficeController {
 
       const { office_name, latitude, longitude, type, status } = req.body;
 
-      // basic validation
-      if (!office_name || !latitude || !longitude || !type || !status) {
+      // office_name / type / status are required; latitude / longitude are
+      // optional on update (preserve existing values) since the admin edit
+      // form does not collect them.
+      if (!office_name || !type || !status) {
         return res.status(400).json({
-          error:
-            "All fields (office_name, latitude, longitude, type, status) are required",
+          error: "office_name, type, and status are required",
         });
       }
 
@@ -106,10 +107,20 @@ class OfficeController {
         return res.status(404).json({ error: "Office not found" });
       }
 
+      // If lat/lng not provided, keep whatever is in the DB.
+      const finalLatitude =
+        latitude !== undefined && latitude !== null && latitude !== ""
+          ? latitude
+          : office.latitude;
+      const finalLongitude =
+        longitude !== undefined && longitude !== null && longitude !== ""
+          ? longitude
+          : office.longitude;
+
       const success = Office.update(officeId, {
         office_name,
-        latitude,
-        longitude,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
         type,
         status,
       });

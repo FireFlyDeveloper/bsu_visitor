@@ -33,6 +33,8 @@ export const useVisitorStore = defineStore('visitor', {
     visitors: [],
     loading: false,
     error: null,
+    page: 1,
+    perPage: 24,
   }),
   getters: {
     visitorCount: (state) => state.visitors.length,
@@ -99,6 +101,34 @@ export const useVisitorStore = defineStore('visitor', {
       } finally {
         this.loading = false
       }
+    },
+
+    // Multipart create with a photo file. Used by ShowVisitors.vue "Add
+    // visitor" modal when a profile image is supplied.
+    async addVisitorWithImage(formData) {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await fetch(VISITOR_ENDPOINT, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData, // browser sets the multipart boundary
+        })
+        const data = await handleResponse(response)
+        return data
+      } catch (error) {
+        this.error = error.message
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // JSON create (no photo). Aliased for ShowVisitors.vue which calls
+    // visitorStore.addVisitor(payload) on the "Add" path with no file.
+    async addVisitor(payload) {
+      return this.createVisitor(payload)
     },
 
     async updateVisitor(id, visitorPayload) {
