@@ -39,12 +39,9 @@
                   Open dashboard
                 </AppButton>
               </router-link>
-              <router-link
-                v-if="userStore.isLoggedIn"
-                to="/office"
-              >
+              <router-link to="/office">
                 <AppButton variant="secondary" size="lg">
-                  AR navigation
+                  Public AR navigation
                 </AppButton>
               </router-link>
             </div>

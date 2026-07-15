@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+.git
+.gitignore
+dist
+uploads
+*.log
+.env.local
+.env.*.local
+.vscode
+.idea
+.DS_Store
+FINAL_TEST_REPORT.md
+README.md
+doc

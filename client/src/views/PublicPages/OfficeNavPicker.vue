@@ -33,7 +33,7 @@
           Where are you heading?
         </h1>
         <p class="mt-2 max-w-md text-sm text-white/80">
-          Pick the office you want to reach. We will open the camera and draw a
+          Pick the office you want to reach. We will open WebXR AR and draw a
           3D arrow in the direction of your destination.
         </p>
       </section>
@@ -104,7 +104,7 @@
       </section>
 
       <footer class="mt-8 text-center text-[0.65rem] text-white/60">
-        Logged in as <strong class="font-semibold text-white">{{ userName }}</strong>
+        Public WebXR AR · Map <strong class="font-mono text-white">{{ MULTISET_MAP_ID }}</strong>
         · AR uses your device camera
       </footer>
     </div>
@@ -115,18 +115,14 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useOfficeStore } from "@/store/office";
-import { useUserStore } from "@/store/user";
 import { stagger } from "@/composables/useStagger";
+import { MULTISET_MAP_ID } from "@/config/arNavigation";
 
 const router = useRouter();
 const officeStore = useOfficeStore();
-const userStore = useUserStore();
 
 const loading = ref(true);
 const offices = computed(() => officeStore.offices);
-const userName = computed(
-  () => userStore.currentUser?.full_name || userStore.currentUser?.username || "staff",
-);
 
 async function load() {
   loading.value = true;

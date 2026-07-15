@@ -15,6 +15,7 @@ import visitorStatusRoutes from "./routes/visitorStatusRoutes.js";
 import securityGuardRoutes from "./routes/securityGuardRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import publicHomeRoutes from "./routes/publicHomeRoutes.js";
+import multisetRoutes from "./routes/multisetRoutes.js";
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use("/api/visitor-status", visitorStatusRoutes);
 app.use("/api/security-guard", securityGuardRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/public-home", publicHomeRoutes);
+app.use("/api/multiset", multisetRoutes);
 app.use("/api/roles", roleRoutes);
 // Health check
 app.get("/api/health", (req, res) => {

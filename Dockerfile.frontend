@@ -1,0 +1,22 @@
+# BSU Visitor — frontend
+# Build the static bundle, then serve it with a tiny static server.
+FROM node:22-bookworm-slim AS build
+WORKDIR /app
+COPY client/package*.json ./
+RUN npm ci
+COPY client/ ./
+# Vite reads VITE_* vars at build time. We bake the backend origin in here so
+# the bundle is self-contained. Override by editing the build arg or client/.env
+# before building.
+ARG VITE_API_BASE=/api
+ENV VITE_API_BASE=${VITE_API_BASE}
+# Sanity check: the build arg is honored.
+RUN echo "Building with VITE_API_BASE=${VITE_API_BASE}" && npm run build
+
+FROM node:22-bookworm-slim AS runtime
+WORKDIR /app
+RUN npm i -g serve@14
+COPY --from=build /app/dist ./dist
+EXPOSE 5173
+# `serve` does SPA fallback (index.html for unknown routes) by default with -s.
+CMD ["serve", "-s", "dist", "-l", "5173"]

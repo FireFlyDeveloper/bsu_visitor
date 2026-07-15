@@ -1,21 +1,15 @@
 <template>
   <div
-    class="fixed inset-0 z-50 overflow-hidden bg-black text-white"
+    class="fixed inset-0 z-50 overflow-hidden text-white"
+    :class="started || xrActive ? 'bg-transparent' : 'bg-black'"
   >
-    <!-- Camera video (also used by WebXR as the passthrough) -->
-    <video
-      ref="videoEl"
-      playsinline
-      muted
-      autoplay
-      class="absolute inset-0 h-full w-full object-cover"
-    />
-
-    <!-- Three.js WebXR canvas overlay -->
+    <!-- Three.js WebXR canvas. During an immersive session the XR compositor
+         owns the camera passthrough; keep the WebGL canvas alive but make the
+         DOM element transparent so it cannot cover the camera feed. -->
     <canvas
       ref="canvasEl"
       class="absolute inset-0 h-full w-full"
-      :class="xrActive ? 'opacity-100' : 'opacity-0'"
+      :class="xrActive ? 'pointer-events-none opacity-0' : 'opacity-0'"
     />
 
     <!-- ────── Top bar ────── -->
@@ -24,22 +18,27 @@
     >
       <button
         @click="onClose"
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur hover:bg-black/60"
+        class="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
         aria-label="Back"
       >
         ←
       </button>
       <div
-        class="rounded-full bg-black/40 px-4 py-2 text-sm font-semibold backdrop-blur"
+        class="rounded-2xl bg-black/40 px-4 py-2 text-sm font-semibold"
       >
-        <span class="text-white/70">Navigating to</span>
-        <span class="ml-1 font-bold uppercase tracking-wider text-white">
-          {{ officeName }}
-        </span>
+        <div>
+          <span class="text-white/70">Navigating to</span>
+          <span class="ml-1 font-bold uppercase tracking-wider text-white">
+            {{ officeName }}
+          </span>
+        </div>
+        <div class="mt-0.5 font-mono text-[0.65rem] text-white/60">
+          Map {{ MULTISET_MAP_ID }}
+        </div>
       </div>
       <button
         @click="onClose"
-        class="flex h-10 items-center justify-center rounded-full bg-black/40 px-3 text-sm font-semibold backdrop-blur hover:bg-black/60"
+        class="flex h-10 items-center justify-center rounded-full bg-black/40 px-3 text-sm font-semibold hover:bg-black/60"
       >
         Exit
       </button>
@@ -48,7 +47,7 @@
     <!-- ────── Permission / start gate ────── -->
     <div
       v-if="!started"
-      class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 p-6 text-center backdrop-blur"
+      class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 p-6 text-center"
     >
       <div
         class="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--bsu-red)] shadow-2xl"
@@ -76,14 +75,20 @@
       <p v-if="errorMsg" class="mt-3 text-sm text-rose-300">{{ errorMsg }}</p>
       <button
         @click="onStart"
-        :disabled="starting"
+        :disabled="starting || preparing || !arReady"
         class="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--bsu-red)] px-6 py-3 font-bold shadow-lg hover:bg-[#a30e22] disabled:opacity-60"
       >
         <span
           v-if="starting"
           class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
         />
-        {{ starting ? "Starting camera…" : "Start AR navigation" }}
+        {{
+          preparing
+            ? "Preparing AR…"
+            : starting
+              ? "Starting AR…"
+              : "Start AR navigation"
+        }}
       </button>
     </div>
 
@@ -92,41 +97,16 @@
       v-if="started"
       class="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 p-4"
     >
-      <div
-        v-if="manualMode"
-        class="w-full max-w-sm rounded-2xl bg-black/60 p-3 text-center text-xs text-white/80 backdrop-blur"
-      >
-        Hold your phone upright. Use the slider to rotate the arrow toward
-        <strong class="text-white">{{ officeName }}</strong>.
-      </div>
-
-      <!-- Manual direction slider (fallback when VPS is unavailable) -->
-      <div
-        v-if="manualMode"
-        class="flex w-full max-w-sm items-center gap-3 rounded-2xl bg-black/60 px-4 py-3 backdrop-blur"
-      >
-        <span class="text-xs text-white/60">← turn</span>
-        <input
-          v-model.number="manualBearing"
-          type="range"
-          min="-180"
-          max="180"
-          step="1"
-          class="flex-1 accent-[var(--bsu-red)]"
-        />
-        <span class="text-xs text-white/60">turn →</span>
-      </div>
-
       <!-- Distance + step indicators -->
       <div class="flex items-center gap-2">
         <span
-          class="rounded-full bg-black/50 px-3 py-1 text-xs font-semibold backdrop-blur"
+          class="rounded-full bg-black/50 px-3 py-1 text-xs font-semibold"
         >
           <span class="text-white/60">Mode</span>
-          <span class="ml-1 text-white">{{ modeLabel }}</span>
+          <span class="ml-1 text-white">AR</span>
         </span>
         <span
-          class="rounded-full bg-black/50 px-3 py-1 text-xs font-semibold backdrop-blur"
+          class="rounded-full bg-black/50 px-3 py-1 text-xs font-semibold"
         >
           <span class="text-white/60">Bearing</span>
           <span class="ml-1 font-mono text-white">
@@ -135,19 +115,38 @@
         </span>
         <span
           v-if="vpsActive"
-          class="rounded-full bg-emerald-600/80 px-3 py-1 text-xs font-semibold backdrop-blur"
+          class="rounded-full bg-emerald-600/80 px-3 py-1 text-xs font-semibold"
         >
           VPS ✓
         </span>
+      </div>
+      <div
+        class="max-w-[90vw] rounded-full bg-black/40 px-3 py-1 text-[0.65rem] font-medium text-white/80"
+      >
+        XR {{ xrActive ? "active" : "starting" }} · VPS
+        {{ vpsActive ? "✓" : "localizing" }}
+        <span v-if="errorMsg" class="text-rose-200"> · {{ errorMsg }}</span>
       </div>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, ref, computed, watch } from "vue";
+import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import * as THREE from "three";
+import { MultisetClient, XRSessionManager } from "@multisetai/vps/core";
+import { ThreeAdapter } from "@multisetai/vps/three";
+import {
+  MULTISET_AUTH_ENDPOINT,
+  MULTISET_BROWSER_CLIENT_ID,
+  MULTISET_FILE_ENDPOINT,
+  MULTISET_MAP_DETAILS_ENDPOINT,
+  MULTISET_MAP_ID,
+  MULTISET_MAP_SET_DETAILS_ENDPOINT,
+  MULTISET_QUERY_ENDPOINT,
+  isMultisetConfigured,
+} from "@/config/arNavigation";
 
 const route = useRoute();
 const router = useRouter();
@@ -155,103 +154,99 @@ const router = useRouter();
 const officeId = computed(() => Number(route.query.to || 0));
 const officeName = computed(() => route.query.name || "your destination");
 
-const videoEl = ref(null);
 const canvasEl = ref(null);
 
 const started = ref(false);
 const starting = ref(false);
+const preparing = ref(false);
+const arReady = ref(false);
 const errorMsg = ref("");
 const xrActive = ref(false);
-const manualMode = ref(true); // start in manual until VPS confirms a pose
-const manualBearing = ref(0); // user-set bearing in degrees [-180, 180]
 const displayBearing = ref(0); // final bearing shown in HUD
 
-// Multiset VPS config (env-driven, optional). When both vars are set,
-// we'll poll the /vps/pose endpoint to localize the phone in the
-// BSU building. If not set, we stay in manual mode.
-const MULTISET_KEY = import.meta.env.VITE_MULTISET_API_KEY || "";
-const MULTISET_MAP_ID = import.meta.env.VITE_MULTISET_MAP_ID || "";
+// Multiset VPS config. The map id is public and pinned for the BSU map.
+// Real credentials stay server-side behind /api/multiset/token; the browser
+// receives only a short-lived Multiset token.
 const vpsActive = ref(false);
-let vpsTimer = null;
-
-const modeLabel = computed(() =>
-  vpsActive.value ? "AR" : manualMode.value ? "Manual" : "AR",
-);
+const vpsConfidence = ref(null);
+let multisetClient = null;
+let multisetSession = null;
+let multisetAdapter = null;
 
 // ── three.js core ─────────────────────────────────────────────────
 let renderer, scene, camera, arrow, ring, clock;
 let deviceHeading = 0; // compass heading from DeviceOrientationEvent
 
-async function onStart() {
-  starting.value = true;
+async function prepareAr() {
+  if (arReady.value || preparing.value) return;
+
+  preparing.value = true;
   errorMsg.value = "";
-  // Some browsers / iOS / non-secure contexts leave `mediaDevices`
-  // undefined. Surface a clear message instead of crashing.
-  if (
-    typeof navigator === "undefined" ||
-    !navigator.mediaDevices ||
-    typeof navigator.mediaDevices.getUserMedia !== "function"
-  ) {
-    errorMsg.value =
-      "Your browser does not expose a camera API here. " +
-      "Open this page over HTTPS (or on http://localhost) in a modern " +
-      "mobile browser (Safari iOS 14.5+, Chrome, Firefox).";
-    starting.value = false;
-    return;
-  }
   try {
-    await startCamera();
-    await initThree();
-    started.value = true;
-    // Try to enter an immersive WebXR AR session if supported;
-    // otherwise we render the AR overlay in a regular 2D scene
-    // on top of the live <video> feed (works on every phone).
-    if (navigator.xr && (await navigator.xr.isSessionSupported("immersive-ar"))) {
-      try {
-        const session = await navigator.xr.requestSession("immersive-ar", {
-          requiredFeatures: ["hit-test"],
-          optionalFeatures: ["dom-overlay", "light-estimation"],
-          domOverlay: { root: document.body },
-        });
-        await renderer.xr.setSession(session);
-        xrActive.value = true;
-        renderer.setAnimationLoop(renderFrame);
-      } catch (e) {
-        console.warn("WebXR AR session failed, using 2D overlay:", e);
-        xrActive.value = false;
-        renderer.setAnimationLoop(renderFrame);
-      }
-    } else {
-      xrActive.value = false;
-      renderer.setAnimationLoop(renderFrame);
+    if (typeof window === "undefined" || !window.isSecureContext) {
+      throw new Error(
+        "WebXR AR requires HTTPS, or http://localhost during development.",
+      );
     }
 
-    // Listen to device orientation for manual arrow rotation.
+    if (!isMultisetConfigured) {
+      throw new Error("Multiset AR is not configured.");
+    }
+
+    if (typeof navigator === "undefined" || !navigator.xr) {
+      throw new Error(
+        "This browser does not expose WebXR AR. Use Chrome or Edge on an ARCore-capable Android device.",
+      );
+    }
+
+    if (!(await ThreeAdapter.isSupported())) {
+      throw new Error(
+        "This device/browser does not support Multiset WebXR AR. Use Chrome or Edge on an ARCore-capable Android device over HTTPS.",
+      );
+    }
+
+    await initThree();
+    await setupMultisetVps();
     window.addEventListener("deviceorientation", onOrientation, true);
-    // Try VPS pose polling if configured.
-    if (MULTISET_KEY && MULTISET_MAP_ID) startVpsPolling();
+    arReady.value = true;
   } catch (err) {
-    console.error(err);
-    errorMsg.value =
-      err?.message ||
-      "Could not start the camera. Please grant permission and reload.";
+    handleArError(err, "Could not prepare AR navigation.");
+    cleanup();
   } finally {
-    starting.value = false;
+    preparing.value = false;
   }
 }
 
-async function startCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
-    audio: false,
-  });
-  videoEl.value.srcObject = stream;
-  await new Promise((resolve) => {
-    videoEl.value.onloadedmetadata = () => {
-      videoEl.value.play();
-      resolve();
-    };
-  });
+async function onStart() {
+  starting.value = true;
+  errorMsg.value = "";
+  let sessionError = null;
+
+  try {
+    if (!arReady.value || !multisetAdapter) {
+      throw new Error("AR is still preparing. Please try again in a moment.");
+    }
+
+    // startSession() must be called directly from this click handler. Do not
+    // await token, camera, or renderer setup here or Chrome may reject WebXR
+    // because the user-activation token has been consumed.
+    await multisetAdapter.startSession();
+    sessionError = lastSessionError;
+
+    if (!multisetAdapter?.isActive()) {
+      throw (
+        sessionError ||
+        new Error(
+          "The WebXR AR session did not start. Check camera/AR permissions and try again.",
+        )
+      );
+    }
+  } catch (err) {
+    handleArError(err, "Could not start AR navigation.");
+    cleanup();
+  } finally {
+    starting.value = false;
+  }
 }
 
 async function initThree() {
@@ -263,6 +258,13 @@ async function initThree() {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x000000, 0);
+  renderer.setClearAlpha(0);
+  renderer.xr.enabled = true;
+
+  const gl = renderer.getContext();
+  if (typeof gl.makeXRCompatible === "function") {
+    await gl.makeXRCompatible();
+  }
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(
@@ -328,7 +330,7 @@ function onOrientation(e) {
   deviceHeading = e.alpha;
 }
 
-function renderFrame() {
+function updateSceneForFrame() {
   // Update arrow rotation to point at the destination.
   // Final bearing = (destination bearing - device heading) so the
   // arrow stays pointing the right way as the user turns the phone.
@@ -338,55 +340,133 @@ function renderFrame() {
     arrow.rotation.y = THREE.MathUtils.degToRad(target);
     ring.rotation.y = THREE.MathUtils.degToRad(target);
     displayBearing.value = (vpsBearing.value + 360) % 360;
-  } else if (manualMode.value) {
-    arrow.rotation.y = THREE.MathUtils.degToRad(manualBearing.value);
-    ring.rotation.y = THREE.MathUtils.degToRad(manualBearing.value);
-    displayBearing.value = manualBearing.value;
   }
-  if (!xrActive.value) renderer.render(scene, camera);
-  else renderer.render(scene, camera);
 }
 
-// ── Multiset VPS pose polling ─────────────────────────────────────
+// ── Multiset VPS SDK integration ─────────────────────────────────
 const vpsBearing = ref(0);
-let lastVpsPose = null;
 
-function startVpsPolling() {
-  // Multiset's REST endpoint signature (per their docs):
-  //   POST https://api.multiset.ai/v1/vps/pose
-  //   headers: { Authorization: Bearer <KEY> }
-  //   body: { map_id, image (base64) }
-  // We poll the camera every ~2s and POST the latest frame.
-  // For a real implementation you'd compress + base64 the frame
-  // client-side. This is a stub hook ready to wire in.
-  vpsTimer = setInterval(async () => {
-    try {
-      const frame = canvasEl.value?.captureStream?.(1)
-        ? null
-        : videoEl.value;
-      if (!frame) return;
-      // NOTE: a full integration would draw the <video> to an
-      // off-screen canvas, grab a JPEG blob, base64 it, and POST.
-      // Leaving the wire-up point here so the Multiset payload
-      // shape is obvious. The endpoint call is intentionally
-      // commented until Kim grabs the real SDK:
-      //
-      //   const res = await fetch("https://api.multiset.ai/v1/vps/pose", {
-      //     method: "POST",
-      //     headers: {
-      //       "Authorization": `Bearer ${MULTISET_KEY}`,
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({ map_id: MULTISET_MAP_ID, image: b64 }),
-      //   });
-      //   const pose = await res.json();
-      //   vpsBearing.value = pose.bearing ?? 0;
-      //   vpsActive.value = true;
-      //   manualMode.value = false;
-    } catch (e) {
-      console.warn("vps poll error", e);
+let lastSessionError = null;
+
+async function setupMultisetVps() {
+  multisetClient = new MultisetClient({
+    // Browser-safe placeholder identity. The backend owns the real Multiset
+    // client id/secret and returns only a short-lived token from authUrl.
+    clientId: MULTISET_BROWSER_CLIENT_ID,
+    clientSecret: "server-side-token-proxy",
+    mapType: "map",
+    code: MULTISET_MAP_ID,
+    isRightHanded: true,
+    endpoints: {
+      authUrl: MULTISET_AUTH_ENDPOINT,
+      queryUrl: MULTISET_QUERY_ENDPOINT,
+      mapDetailsUrl: MULTISET_MAP_DETAILS_ENDPOINT,
+      mapSetDetailsUrl: MULTISET_MAP_SET_DETAILS_ENDPOINT,
+      fileDownloadUrl: MULTISET_FILE_ENDPOINT,
+    },
+  });
+
+  await multisetClient.authorize();
+
+  multisetSession = new XRSessionManager(renderer.getContext(), {
+    client: multisetClient,
+    overlayRoot: document.body,
+    autoLocalize: true,
+    relocalization: true,
+    confidenceCheck: true,
+    confidenceThreshold: 0.5,
+    onSessionStart: () => {
+      started.value = true;
+      xrActive.value = true;
+      lastSessionError = null;
+    },
+    onSessionEnd: () => {
+      started.value = false;
+      xrActive.value = false;
+      vpsActive.value = false;
+    },
+    onLocalizationResult: (result) => {
+      vpsConfidence.value = result?.localizeData?.confidence ?? null;
+    },
+    onLocalizationFailure: (reason) => {
+      console.warn("Multiset localization failed:", reason);
+      vpsActive.value = false;
+      errorMsg.value = describeArError(reason, "VPS localization failed. Move slowly and try again in the mapped area.");
+    },
+    onError: (error) => {
+      lastSessionError = error;
+      handleArError(error, "Multiset WebXR failed.");
+    },
+    onContextLost: () => {
+      handleArError(
+        "The WebGL context was lost. Restart AR navigation to continue.",
+        "The WebGL context was lost.",
+      );
+    },
+    onContextRestored: () => {
+      errorMsg.value = "WebGL was restored. Tap Start AR navigation to restart.";
+    },
+  });
+
+  multisetAdapter = new ThreeAdapter({
+    session: multisetSession,
+    renderer,
+    scene,
+    camera,
+    showMesh: true,
+    showGizmo: false,
+    useDefaultButton: false,
+    onLocalizationSuccess: (result, worldFromMap) => {
+      vpsConfidence.value = result?.localizeData?.confidence ?? null;
+      vpsActive.value = true;
+
+      // Until office-specific map coordinates exist, place the destination
+      // marker at map origin after VPS localization.
+      const mapOrigin = new THREE.Vector3(0, 0, -3).applyMatrix4(worldFromMap);
+      ring.position.copy(mapOrigin);
+      arrow.position.copy(mapOrigin);
+    },
+    onXRFrame: () => {
+      // ThreeAdapter renders the scene after this callback with its synced XR
+      // camera. Rendering here as well causes duplicate/conflicting frame work.
+      updateSceneForFrame();
+    },
+  });
+
+  // Keep Three's XR manager explicitly enabled for compatibility checks while
+  // still allowing Multiset's ThreeAdapter to own the actual session loop.
+  renderer.xr.enabled = true;
+  multisetAdapter.initialize();
+}
+
+async function localizeWithVps() {
+  if (!multisetAdapter || multisetAdapter.isLocalizing) return;
+
+  try {
+    const result = await multisetAdapter.localizeFrame();
+    if (!result) {
+      vpsActive.value = false;
     }
-  }, 2000);
+  } catch (error) {
+    console.warn("Multiset localization failed:", error);
+    vpsActive.value = false;
+    errorMsg.value = describeArError(error, "VPS localization failed. Move slowly and try again in the mapped area.");
+  }
+}
+
+function describeArError(err, fallback) {
+  if (typeof err === "string") return err;
+  if (err?.message) return err.message;
+  if (err?.name) return err.name;
+  return fallback;
+}
+
+function handleArError(err, fallback) {
+  console.warn("AR navigation error:", err);
+  errorMsg.value = describeArError(err, fallback);
+  started.value = false;
+  xrActive.value = false;
+  vpsActive.value = false;
 }
 
 function onClose() {
@@ -395,16 +475,27 @@ function onClose() {
 }
 
 function cleanup() {
-  if (vpsTimer) clearInterval(vpsTimer);
+  if (multisetAdapter) {
+    multisetAdapter.dispose();
+    multisetAdapter = null;
+  }
+  if (multisetSession) {
+    multisetSession.dispose();
+    multisetSession = null;
+  }
+  multisetClient = null;
   window.removeEventListener("deviceorientation", onOrientation);
   window.removeEventListener("resize", onResize);
   if (renderer) {
     renderer.setAnimationLoop(null);
     renderer.dispose();
+    renderer = null;
   }
-  if (videoEl.value?.srcObject) {
-    for (const t of videoEl.value.srcObject.getTracks()) t.stop();
-  }
+  arReady.value = false;
+  started.value = false;
+  xrActive.value = false;
+  vpsActive.value = false;
+  lastSessionError = null;
 }
 
 onBeforeUnmount(cleanup);
@@ -413,6 +504,9 @@ onMounted(() => {
   // Office id from query param — used by future backend hookup
   if (!officeId.value) {
     errorMsg.value = "No destination specified.";
+    return;
   }
+
+  void prepareAr();
 });
 </script>

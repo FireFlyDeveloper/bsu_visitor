@@ -1,0 +1,83 @@
+# BSU Visitor — reverse proxy
+#
+# Sits in front of the frontend and backend so the browser sees a single
+# same-origin origin (e.g. https://bsu-vistors.ffly.site/). Solves the
+# mixed-content + CORS problems that occur when the frontend bundle
+# (VITE_API_BASE=/api) would otherwise be served from HTTPS but the
+# backend is plain HTTP.
+#
+# Caddy is used because it auto-provisions Let's Encrypt certs and has a
+# dead-simple config. For Cloudflare-tunnel-fronted deployments where TLS
+# is terminated upstream, set TLS_OFF=true to skip the cert challenge.
+
+FROM caddy:2-alpine
+ARG TLS_OFF=false
+
+# Default config — site binds to :443 with auto-TLS.
+# Override by mounting a Caddyfile at /etc/caddy/Caddyfile.
+ARG DOMAIN=
+ENV DOMAIN=${DOMAIN}
+COPY <<EOF /etc/caddy/Caddyfile.default
+{
+  auto_https off
+  admin off
+}
+:443 {
+  encode gzip
+  # Frontend static bundle (built by the frontend image, copied below).
+  root * /srv/frontend
+  @api path /api/*
+  @uploads path /uploads/*
+  handle @api {
+    reverse_proxy backend:8765
+  }
+  handle @uploads {
+    reverse_proxy backend:8765
+  }
+  handle {
+    try_files {path} /index.html
+    file_server
+  }
+  # Allow iframes for the public kiosk.
+  header X-Frame-Options "SAMEORIGIN"
+  header Referrer-Policy "strict-origin-when-cross-origin"
+}
+EOF
+
+# If TLS_OFF, write a plain :80 config instead.
+COPY <<EOF /etc/caddy/Caddyfile.no-tls
+{
+  auto_https off
+  admin off
+}
+:80 {
+  encode gzip
+  root * /srv/frontend
+  @api path /api/*
+  @uploads path /uploads/*
+  handle @api {
+    reverse_proxy backend:8765
+  }
+  handle @uploads {
+    reverse_proxy backend:8765
+  }
+  handle {
+    try_files {path} /index.html
+    file_server
+  }
+  header X-Frame-Options "SAMEORIGIN"
+  header Referrer-Policy "strict-origin-when-cross-origin"
+}
+EOF
+
+# Copy the frontend dist into the image.
+COPY --from=bsu-visitor-frontend:latest /app/dist /srv/frontend
+
+# Pick config based on build arg.
+RUN if [ "$TLS_OFF" = "true" ]; then \
+      cp /etc/caddy/Caddyfile.no-tls /etc/caddy/Caddyfile; \
+    else \
+      cp /etc/caddy/Caddyfile.default /etc/caddy/Caddyfile; \
+    fi
+
+EXPOSE 80 443

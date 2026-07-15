@@ -34,26 +34,21 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
-    // /office (no id) — logged-in AR navigation picker.
-    // Logged-out visitors use the per-office fixed QR at /office/:id
-    // (the public kiosk) instead. Keeping the AR flow behind a
-    // session makes sure the camera + destination data is only
-    // reachable by authenticated staff.
+    // /office (no id) — public AR navigation picker.
+    // Visitors can open the WebXR navigation flow without login.
     path: "/office",
     name: "OfficeNavPicker",
     component: () => import("../views/PublicPages/OfficeNavPicker.vue"),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: false },
   },
   {
     // AR navigation — opens the device camera and renders a 3D
-    // arrow toward the destination office. Multiset VPS is wired
-    // via env (VITE_MULTISET_API_KEY, VITE_MULTISET_MAP_ID);
-    // manual bearing slider is the fallback. Auth-gated so the
-    // AR experience is reserved for logged-in staff.
+    // arrow toward the destination office using the BSU Multiset map id
+    // from src/config/arNavigation.js.
     path: "/navigate",
     name: "NavAr",
     component: () => import("../views/PublicPages/NavAr.vue"),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: false },
   },
   {
     path: "/qr-code",

@@ -1,0 +1,95 @@
+# BSU Visitor — production stack (v2)
+#
+# Three services:
+#   backend  — Express on :8765 (internal only, no public port)
+#   frontend — static bundle, baked with VITE_API_BASE=/api
+#   proxy    — Caddy reverse proxy, single origin
+#
+# Browser sees one origin (https://bsu-vistors.ffly.site/).
+# /         → static SPA (with /index.html fallback)
+# /api/*    → backend:8765
+# /uploads/*→ backend:8765 (visitor photos)
+#
+# Behind Cloudflare Tunnel: set CF_TUNNEL_ORIGIN to the public hostname,
+# point the tunnel at this host on port 443 (TLS) or 80 (TLS_OFF=true).
+# Portainer is on :9000 and owns :8000 — neither conflicts.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: bsu-visitor-backend:latest
+    container_name: bsu-visitor-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8765
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      JWT_EXPIRY: 24h
+      MULTISET_CLIENT_ID: ${MULTISET_CLIENT_ID:-}
+      MULTISET_CLIENT_SECRET: ${MULTISET_CLIENT_SECRET:-}
+      MULTISET_MAP_CODE: ${MULTISET_MAP_CODE:-MAP_GCEL3WD6ACQL}
+      # Allow the proxy origin (same-origin) and the public HTTPS URL.
+      # CORS is permissive for same-origin; the public URL is here as
+      # a safety net in case a browser extension or service worker hits
+      # the backend directly.
+      CLIENT_URL: ${CLIENT_URL:-https://bsu-vistors.ffly.site,http://localhost,http://100.83.235.28}
+    volumes:
+      - bsu-data:/app/src/database
+      - bsu-uploads:/app/uploads
+    expose:
+      - "8765"   # internal only — no public port
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8765/api/public-home/offices').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE: /api
+    image: bsu-visitor-frontend:latest
+    container_name: bsu-visitor-frontend
+    restart: unless-stopped
+    # No public port — proxy serves the dist.
+    expose:
+      - "5173"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5173/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        # Set TLS_OFF=true when fronted by a Cloudflare tunnel that
+        # terminates TLS upstream (Caddy would otherwise fail ACME).
+        TLS_OFF: ${TLS_OFF:-true}
+    image: bsu-visitor-proxy:latest
+    container_name: bsu-visitor-proxy
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    ports:
+      - "${PROXY_PORT:-8443}:443"
+      - "${PROXY_HTTP_PORT:-8080}:80"
+    environment:
+      # Domain this proxy is fronting. If empty, Caddy binds :80/:443 by IP.
+      # Behind Cloudflare Tunnel, set this to your public hostname so the
+      # Caddy access log shows it and the Host header is preserved.
+      - DOMAIN=${DOMAIN:-bsu-vistors.ffly.site}
+
+volumes:
+  bsu-data:
+  bsu-uploads:
