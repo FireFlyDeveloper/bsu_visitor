@@ -236,7 +236,7 @@ let multisetSession = null;
 let multisetAdapter = null;
 
 // ── three.js core ─────────────────────────────────────────────────
-let renderer, scene, camera, navGroup, pathGroup, userConnectorLine, destinationConnectorLine;
+let renderer, scene, camera, navGroup, pathGroup, userConnectorLine, destinationConnectorLine, destinationLabelSprite;
 let hasDestinationWorldPosition = false;
 let hasPathwayWorldPoints = false;
 let destinationPathwayIndex = -1;
@@ -379,6 +379,10 @@ async function initThree() {
   destinationConnectorLine.visible = false;
   scene.add(destinationConnectorLine);
 
+  destinationLabelSprite = createDestinationLabelSprite(officeName.value);
+  destinationLabelSprite.visible = false;
+  scene.add(destinationLabelSprite);
+
   // Resize handling
   window.addEventListener("resize", onResize);
   onResize();
@@ -407,6 +411,79 @@ function hideNavigationPath() {
   if (pathGroup) pathGroup.visible = false;
   if (userConnectorLine) userConnectorLine.visible = false;
   if (destinationConnectorLine) destinationConnectorLine.visible = false;
+  if (destinationLabelSprite) destinationLabelSprite.visible = false;
+}
+
+function createDestinationLabelTexture(label) {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = 512;
+  const height = 160;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  context.scale(dpr, dpr);
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "rgba(8, 8, 10, 0.88)";
+  roundRect(context, 18, 26, width - 36, 92, 30);
+  context.fill();
+  context.strokeStyle = "rgba(255, 255, 255, 0.26)";
+  context.lineWidth = 3;
+  context.stroke();
+
+  context.fillStyle = "#d0112b";
+  roundRect(context, 36, 46, 18, 52, 9);
+  context.fill();
+
+  context.fillStyle = "#ffffff";
+  context.font = "700 34px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(label, width / 2 + 14, 72, width - 116);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function roundRect(context, x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+}
+
+function createDestinationLabelSprite(label) {
+  const texture = createDestinationLabelTexture(label);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.frustumCulled = false;
+  sprite.renderOrder = 1001;
+  sprite.scale.set(1.9, 0.6, 1);
+  return sprite;
+}
+
+function updateDestinationLabel(label, position) {
+  if (!destinationLabelSprite) return;
+
+  destinationLabelSprite.material.map?.dispose();
+  destinationLabelSprite.material.map = createDestinationLabelTexture(label);
+  destinationLabelSprite.material.needsUpdate = true;
+  destinationLabelSprite.position.copy(position).add(new THREE.Vector3(0, 1.05, 0));
+  destinationLabelSprite.visible = true;
 }
 
 function createPathSegmentMesh() {
@@ -608,6 +685,7 @@ async function setupMultisetVps() {
       const { x, y, z } = destination.multiset;
       const mapPosition = new THREE.Vector3(-x, y, z).applyMatrix4(worldFromMap);
       destinationWorldPosition.copy(mapPosition);
+      updateDestinationLabel(destination.label || officeName.value, destinationWorldPosition);
       pathwayWorldPoints.length = 0;
       AR_PATHWAY_POINTS.forEach((point) => {
         pathwayWorldPoints.push(
@@ -705,6 +783,7 @@ function cleanup() {
   pathGroup = null;
   userConnectorLine = null;
   destinationConnectorLine = null;
+  destinationLabelSprite = null;
   hasDestinationWorldPosition = false;
   hasPathwayWorldPoints = false;
   destinationPathwayIndex = -1;
