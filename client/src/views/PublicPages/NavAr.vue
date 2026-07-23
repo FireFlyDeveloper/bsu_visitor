@@ -1,7 +1,7 @@
 <template>
   <div
     class="fixed inset-0 z-50 overflow-hidden text-white"
-    :class="started || xrActive ? 'bg-transparent' : 'bg-black'"
+    :class="started || xrActive ? 'bg-transparent' : 'bg-[#0b0b0d]'"
   >
     <!-- Three.js WebXR canvas. During an immersive session the XR compositor
          owns the camera passthrough; keep the WebGL canvas alive but make the
@@ -12,120 +12,166 @@
       :class="xrActive ? 'pointer-events-none opacity-0' : 'opacity-0'"
     />
 
-    <!-- ────── Top bar ────── -->
+    <div
+      v-if="!xrActive"
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(208,17,43,0.34),transparent_34%),linear-gradient(180deg,#161316_0%,#08080a_100%)]"
+      aria-hidden="true"
+    />
+
+    <!-- Top bar -->
     <header
-      class="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 p-4"
+      class="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 px-4 pt-4 sm:px-5 sm:pt-5"
     >
       <button
         @click="onClose"
-        class="flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60"
-        aria-label="Back"
+        class="flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/12 bg-black/48 text-white shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur transition hover:bg-black/62 active:translate-y-px"
+        aria-label="Go back"
       >
-        ←
+        <ArrowLeft class="h-5 w-5" aria-hidden="true" />
       </button>
       <div
-        class="rounded-2xl bg-black/40 px-4 py-2 text-sm font-semibold"
+        class="min-w-0 flex-1 rounded-3xl border border-white/12 bg-black/46 px-4 py-3 text-sm shadow-[0_12px_32px_rgba(0,0,0,0.24)] backdrop-blur"
       >
-        <div>
-          <span class="text-white/70">Navigating to</span>
-          <span class="ml-1 font-bold uppercase tracking-wider text-white">
-            {{ officeName }}
-          </span>
-        </div>
-        <div class="mt-0.5 font-mono text-[0.65rem] text-white/60">
-          Map {{ MULTISET_MAP_ID }}
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[var(--bsu-red)] text-white">
+            <MapPinned class="h-4.5 w-4.5" aria-hidden="true" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-white/62">Navigating to</p>
+            <p class="truncate text-base font-bold leading-tight tracking-tight text-white">
+              {{ officeName }}
+            </p>
+            <p class="mt-1 font-mono text-[0.68rem] text-white/54">
+              Map {{ MULTISET_MAP_ID }}
+            </p>
+          </div>
         </div>
       </div>
       <button
         @click="onClose"
-        class="flex h-10 items-center justify-center rounded-full bg-black/40 px-3 text-sm font-semibold hover:bg-black/60"
+        class="flex min-h-11 items-center justify-center rounded-2xl border border-white/12 bg-black/48 px-4 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(0,0,0,0.28)] backdrop-blur transition hover:bg-black/62 active:translate-y-px"
       >
         Exit
       </button>
     </header>
 
-    <!-- ────── Permission / start gate ────── -->
+    <!-- Permission / start gate -->
     <div
       v-if="!started"
-      class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 p-6 text-center"
+      class="absolute inset-0 z-20 flex items-center justify-center bg-black/72 px-4 py-6 backdrop-blur-sm"
     >
-      <div
-        class="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--bsu-red)] shadow-2xl"
-      >
-        <svg
-          class="h-12 w-12"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          stroke-width="2"
+      <section class="w-full max-w-md rounded-[2rem] border border-white/12 bg-white/[0.08] p-5 text-left shadow-[0_28px_80px_rgba(0,0,0,0.42)] backdrop-blur sm:p-6">
+        <div class="flex items-start gap-4">
+          <div
+            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-[var(--bsu-red)] shadow-[0_14px_34px_rgba(208,17,43,0.36)]"
+          >
+            <Camera class="h-7 w-7" aria-hidden="true" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-[0.16em] text-white/58">
+              Camera permission
+            </p>
+            <h1 class="mt-2 text-2xl font-bold tracking-tight !text-white">
+              Start AR when you are on campus.
+            </h1>
+          </div>
+        </div>
+
+        <p class="mt-4 text-sm leading-6 text-white/74">
+          We use your camera to localize the route to
+          <strong class="font-semibold text-white">{{ officeName }}</strong>.
+          Frames stay on your device and the route marker appears only after VPS finds the mapped area.
+        </p>
+
+        <div class="mt-5 grid gap-2 text-sm text-white/72">
+          <div class="flex items-start gap-2 rounded-2xl bg-white/[0.07] px-3 py-2">
+            <ShieldCheck class="mt-0.5 h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+            <span>Camera opens after you tap the button.</span>
+          </div>
+          <div class="flex items-start gap-2 rounded-2xl bg-white/[0.07] px-3 py-2">
+            <ScanLine class="mt-0.5 h-4 w-4 shrink-0 text-white" aria-hidden="true" />
+            <span>Move slowly while localization is starting.</span>
+          </div>
+        </div>
+
+        <p
+          v-if="errorMsg"
+          class="mt-4 rounded-2xl border border-rose-300/28 bg-rose-500/16 px-3 py-2 text-sm leading-5 text-rose-100"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M3 7h2l2-3h10l2 3h2v12H3V7zm9 11a4 4 0 100-8 4 4 0 000 8z"
+          {{ errorMsg }}
+        </p>
+
+        <button
+          @click="onStart"
+          :disabled="starting || preparing || !arReady"
+          class="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--bsu-red)] px-5 text-base font-bold text-white shadow-[0_18px_42px_rgba(208,17,43,0.34)] transition hover:bg-[var(--bsu-red-deep)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-62"
+        >
+          <span
+            v-if="starting || preparing"
+            class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+            aria-hidden="true"
           />
-        </svg>
-      </div>
-      <h1 class="mt-6 text-2xl font-bold">AR navigation</h1>
-      <p class="mt-2 max-w-sm text-sm text-white/70">
-        We need access to your camera to show directions to
-        <strong class="text-white">{{ officeName }}</strong>. The image is
-        processed on-device; nothing is uploaded.
-      </p>
-      <p v-if="errorMsg" class="mt-3 text-sm text-rose-300">{{ errorMsg }}</p>
-      <button
-        @click="onStart"
-        :disabled="starting || preparing || !arReady"
-        class="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--bsu-red)] px-6 py-3 font-bold shadow-lg hover:bg-[#a30e22] disabled:opacity-60"
-      >
-        <span
-          v-if="starting"
-          class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-        />
-        {{
-          preparing
-            ? "Preparing AR…"
-            : starting
-              ? "Starting AR…"
-              : "Start AR navigation"
-        }}
-      </button>
+          {{
+            preparing
+              ? "Preparing AR"
+              : starting
+                ? "Starting AR"
+                : "Start AR navigation"
+          }}
+        </button>
+
+        <p class="mt-3 text-center text-xs leading-5 text-white/52">
+          If the button is disabled, AR setup is still checking your browser and device support.
+        </p>
+      </section>
     </div>
 
-    <!-- ────── Bottom HUD ────── -->
+    <!-- Bottom HUD -->
     <footer
       v-if="started"
-      class="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 p-4"
+      class="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-3 px-4 pb-4 sm:pb-5"
     >
-      <!-- Distance + step indicators -->
-      <div class="flex items-center gap-2">
+      <div class="flex max-w-[94vw] flex-wrap items-center justify-center gap-2">
         <span
-          class="rounded-full bg-black/50 px-3 py-1 text-xs font-semibold"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-2xl border border-white/12 bg-black/50 px-3 text-xs font-semibold shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur"
         >
-          <span class="text-white/60">Mode</span>
-          <span class="ml-1 text-white">AR</span>
+          <Navigation class="h-3.5 w-3.5 text-white/70" aria-hidden="true" />
+          AR mode
         </span>
         <span
-          class="rounded-full bg-black/50 px-3 py-1 text-xs font-semibold"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-2xl border border-white/12 bg-black/50 px-3 text-xs font-semibold shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur"
         >
-          <span class="text-white/60">Bearing</span>
-          <span class="ml-1 font-mono text-white">
+          <Compass class="h-3.5 w-3.5 text-white/70" aria-hidden="true" />
+          <span class="font-mono text-white">
             {{ Math.round(displayBearing) }}°
           </span>
         </span>
         <span
-          v-if="vpsActive"
-          class="rounded-full bg-emerald-600/80 px-3 py-1 text-xs font-semibold"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-2xl border px-3 text-xs font-semibold shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur"
+          :class="vpsActive ? 'border-emerald-300/35 bg-emerald-600/82 text-white' : localizationFailed ? 'border-rose-300/35 bg-rose-600/82 text-white' : 'border-white/12 bg-black/50 text-white/80'"
         >
-          VPS ✓
+          <ScanLine class="h-3.5 w-3.5" aria-hidden="true" />
+          {{ vpsActive ? "VPS localized" : localizationFailed ? "Localization failed" : "Localizing" }}
         </span>
       </div>
       <div
-        class="max-w-[90vw] rounded-full bg-black/40 px-3 py-1 text-[0.65rem] font-medium text-white/80"
+        class="max-w-[94vw] rounded-2xl border border-white/12 bg-black/48 px-3 py-2 text-center text-xs font-medium leading-5 text-white/76 shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur"
       >
-        XR {{ xrActive ? "active" : "starting" }} · VPS
-        {{ vpsActive ? "✓" : "localizing" }}
-        <span v-if="errorMsg" class="text-rose-200"> · {{ errorMsg }}</span>
+        {{ localizationFailed ? "Move to the mapped area, keep the camera steady, then retry localization." : "Keep the phone steady and follow the red pathway after localization." }}
+        <span v-if="errorMsg" class="block text-rose-100">{{ errorMsg }}</span>
+        <button
+          v-if="localizationFailed"
+          @click="retryLocalization"
+          :disabled="retryingLocalization"
+          class="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--bsu-red)] px-4 text-sm font-bold text-white shadow-[0_14px_32px_rgba(208,17,43,0.28)] transition hover:bg-[var(--bsu-red-deep)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-62"
+        >
+          <span
+            v-if="retryingLocalization"
+            class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+            aria-hidden="true"
+          />
+          {{ retryingLocalization ? "Retrying" : "Retry localization" }}
+        </button>
       </div>
     </footer>
   </div>
@@ -134,10 +180,20 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import {
+  ArrowLeft,
+  Camera,
+  Compass,
+  MapPinned,
+  Navigation,
+  ScanLine,
+  ShieldCheck,
+} from "@lucide/vue";
 import * as THREE from "three";
 import { MultisetClient, XRSessionManager } from "@multisetai/vps/core";
 import { ThreeAdapter } from "@multisetai/vps/three";
 import {
+  AR_PATHWAY_POINTS,
   MULTISET_AUTH_ENDPOINT,
   MULTISET_BROWSER_CLIENT_ID,
   MULTISET_FILE_ENDPOINT,
@@ -145,14 +201,18 @@ import {
   MULTISET_MAP_ID,
   MULTISET_MAP_SET_DETAILS_ENDPOINT,
   MULTISET_QUERY_ENDPOINT,
+  findArDestination,
   isMultisetConfigured,
 } from "@/config/arNavigation";
 
 const route = useRoute();
 const router = useRouter();
 
-const officeId = computed(() => Number(route.query.to || 0));
+const officeId = computed(() => route.query.to || "");
 const officeName = computed(() => route.query.name || "your destination");
+const selectedDestination = computed(() =>
+  findArDestination({ id: officeId.value, name: officeName.value }),
+);
 
 const canvasEl = ref(null);
 
@@ -163,6 +223,8 @@ const arReady = ref(false);
 const errorMsg = ref("");
 const xrActive = ref(false);
 const displayBearing = ref(0); // final bearing shown in HUD
+const localizationFailed = ref(false);
+const retryingLocalization = ref(false);
 
 // Multiset VPS config. The map id is public and pinned for the BSU map.
 // Real credentials stay server-side behind /api/multiset/token; the browser
@@ -174,8 +236,25 @@ let multisetSession = null;
 let multisetAdapter = null;
 
 // ── three.js core ─────────────────────────────────────────────────
-let renderer, scene, camera, arrow, ring, clock;
+let renderer, scene, camera, navGroup, pathGroup, userConnectorLine, destinationConnectorLine;
+let hasDestinationWorldPosition = false;
+let hasPathwayWorldPoints = false;
+let destinationPathwayIndex = -1;
 let deviceHeading = 0; // compass heading from DeviceOrientationEvent
+
+const userWorldPosition = new THREE.Vector3();
+const destinationWorldPosition = new THREE.Vector3();
+const pathwayWorldPoints = [];
+const routeWorldPoints = [];
+const pathMidpoint = new THREE.Vector3();
+const pathDirection = new THREE.Vector3();
+const pathUp = new THREE.Vector3(0, 1, 0);
+const pathwayMaterial = new THREE.MeshBasicMaterial({
+  color: 0xd0112b,
+  transparent: true,
+  opacity: 0.96,
+  depthTest: false,
+});
 
 async function prepareAr() {
   if (arReady.value || preparing.value) return;
@@ -279,42 +358,30 @@ async function initThree() {
   const light = new THREE.HemisphereLight(0xffffff, 0x000000, 1);
   scene.add(light);
 
-  // Ring (where the destination is)
-  const ringGeo = new THREE.RingGeometry(0.4, 0.5, 32);
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: 0xd0112b,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.9,
-  });
-  ring = new THREE.Mesh(ringGeo, ringMat);
-  ring.position.set(0, 0, -3);
-  scene.add(ring);
+  // Navigation content follows the official Multiset example pattern:
+  // create the 3D group during setup, keep it hidden, then reveal/place it
+  // only after VPS returns a successful localization pose.
+  navGroup = new THREE.Group();
+  navGroup.visible = false;
+  scene.add(navGroup);
 
-  // 3D arrow (cone + cylinder) floating above the ring
-  arrow = new THREE.Group();
+  // Primary route path. Use a thin cylinder instead of THREE.Line because
+  // mobile WebGL/WebXR commonly ignores line thickness hints.
+  pathGroup = new THREE.Group();
+  pathGroup.visible = false;
+  scene.add(pathGroup);
 
-  const shaft = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.04, 0.4, 16),
-    new THREE.MeshBasicMaterial({ color: 0xd0112b }),
-  );
-  shaft.position.y = 0.2;
-  arrow.add(shaft);
+  userConnectorLine = createPathSegmentMesh();
+  userConnectorLine.visible = false;
+  scene.add(userConnectorLine);
 
-  const head = new THREE.Mesh(
-    new THREE.ConeGeometry(0.12, 0.25, 16),
-    new THREE.MeshBasicMaterial({ color: 0xd0112b }),
-  );
-  head.position.y = 0.55;
-  arrow.add(head);
-
-  arrow.position.set(0, 0, -3);
-  scene.add(arrow);
+  destinationConnectorLine = createPathSegmentMesh();
+  destinationConnectorLine.visible = false;
+  scene.add(destinationConnectorLine);
 
   // Resize handling
   window.addEventListener("resize", onResize);
   onResize();
-  clock = new THREE.Clock();
 }
 
 function onResize() {
@@ -330,17 +397,109 @@ function onOrientation(e) {
   deviceHeading = e.alpha;
 }
 
-function updateSceneForFrame() {
-  // Update arrow rotation to point at the destination.
-  // Final bearing = (destination bearing - device heading) so the
-  // arrow stays pointing the right way as the user turns the phone.
-  if (vpsActive.value) {
-    // VPS supplies an absolute bearing; subtract device compass.
-    const target = vpsBearing.value - deviceHeading;
-    arrow.rotation.y = THREE.MathUtils.degToRad(target);
-    ring.rotation.y = THREE.MathUtils.degToRad(target);
-    displayBearing.value = (vpsBearing.value + 360) % 360;
+function hideNavigationPath() {
+  hasDestinationWorldPosition = false;
+  hasPathwayWorldPoints = false;
+  destinationPathwayIndex = -1;
+  pathwayWorldPoints.length = 0;
+  routeWorldPoints.length = 0;
+  if (navGroup) navGroup.visible = false;
+  if (pathGroup) pathGroup.visible = false;
+  if (userConnectorLine) userConnectorLine.visible = false;
+  if (destinationConnectorLine) destinationConnectorLine.visible = false;
+}
+
+function createPathSegmentMesh() {
+  const geometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16, 1, true);
+  const segment = new THREE.Mesh(geometry, pathwayMaterial);
+  segment.frustumCulled = false;
+  segment.renderOrder = 1000;
+  return segment;
+}
+
+function placeSegment(segment, start, end) {
+  pathDirection.subVectors(end, start);
+  const distance = pathDirection.length();
+  if (distance < 0.08) {
+    segment.visible = false;
+    return;
   }
+
+  pathMidpoint.copy(start).add(end).multiplyScalar(0.5);
+  segment.position.copy(pathMidpoint);
+  segment.scale.set(1, distance, 1);
+  segment.quaternion.setFromUnitVectors(pathUp, pathDirection.normalize());
+  segment.visible = true;
+}
+
+function findNearestPathwayIndex(position) {
+  let bestIndex = 0;
+  let bestDistance = Infinity;
+
+  pathwayWorldPoints.forEach((point, index) => {
+    const distance = point.distanceToSquared(position);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+
+  return bestIndex;
+}
+
+function rebuildPathwaySegments(points = routeWorldPoints) {
+  if (!pathGroup) return;
+
+  pathGroup.clear();
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const segment = createPathSegmentMesh();
+    placeSegment(segment, points[i], points[i + 1]);
+    pathGroup.add(segment);
+  }
+  pathGroup.visible = points.length > 1;
+}
+
+function updateNavigationPath() {
+  if (
+    !vpsActive.value ||
+    !hasDestinationWorldPosition ||
+    !hasPathwayWorldPoints ||
+    !camera ||
+    !pathGroup ||
+    !userConnectorLine ||
+    !destinationConnectorLine
+  ) {
+    if (pathGroup) pathGroup.visible = false;
+    if (userConnectorLine) userConnectorLine.visible = false;
+    if (destinationConnectorLine) destinationConnectorLine.visible = false;
+    return;
+  }
+
+  camera.getWorldPosition(userWorldPosition);
+  const userPathwayIndex = findNearestPathwayIndex(userWorldPosition);
+  const startIndex = Math.min(userPathwayIndex, destinationPathwayIndex);
+  const endIndex = Math.max(userPathwayIndex, destinationPathwayIndex);
+  routeWorldPoints.length = 0;
+  routeWorldPoints.push(...pathwayWorldPoints.slice(startIndex, endIndex + 1));
+
+  if (userPathwayIndex > destinationPathwayIndex) {
+    routeWorldPoints.reverse();
+  }
+
+  rebuildPathwaySegments(routeWorldPoints);
+  placeSegment(userConnectorLine, userWorldPosition, routeWorldPoints[0]);
+  placeSegment(
+    destinationConnectorLine,
+    routeWorldPoints[routeWorldPoints.length - 1],
+    destinationWorldPosition,
+  );
+  pathGroup.visible = routeWorldPoints.length > 1;
+}
+
+function updateSceneForFrame() {
+  // Keep the pathway updated from the current XR camera/user pose.
+  displayBearing.value = (vpsBearing.value + 360) % 360;
+  updateNavigationPath();
 }
 
 // ── Multiset VPS SDK integration ─────────────────────────────────
@@ -378,12 +537,21 @@ async function setupMultisetVps() {
     onSessionStart: () => {
       started.value = true;
       xrActive.value = true;
+      vpsActive.value = false;
+      localizationFailed.value = false;
+      hideNavigationPath();
       lastSessionError = null;
     },
     onSessionEnd: () => {
       started.value = false;
       xrActive.value = false;
       vpsActive.value = false;
+      localizationFailed.value = false;
+      hideNavigationPath();
+    },
+    onLocalizationInit: () => {
+      localizationFailed.value = false;
+      errorMsg.value = "";
     },
     onLocalizationResult: (result) => {
       vpsConfidence.value = result?.localizeData?.confidence ?? null;
@@ -391,6 +559,8 @@ async function setupMultisetVps() {
     onLocalizationFailure: (reason) => {
       console.warn("Multiset localization failed:", reason);
       vpsActive.value = false;
+      localizationFailed.value = true;
+      hideNavigationPath();
       errorMsg.value = describeArError(reason, "VPS localization failed. Move slowly and try again in the mapped area.");
     },
     onError: (error) => {
@@ -413,18 +583,43 @@ async function setupMultisetVps() {
     renderer,
     scene,
     camera,
-    showMesh: true,
+    showMesh: false,
     showGizmo: false,
     useDefaultButton: false,
     onLocalizationSuccess: (result, worldFromMap) => {
       vpsConfidence.value = result?.localizeData?.confidence ?? null;
       vpsActive.value = true;
+      localizationFailed.value = false;
+      errorMsg.value = "";
 
-      // Until office-specific map coordinates exist, place the destination
-      // marker at map origin after VPS localization.
-      const mapOrigin = new THREE.Vector3(0, 0, -3).applyMatrix4(worldFromMap);
-      ring.position.copy(mapOrigin);
-      arrow.position.copy(mapOrigin);
+      // Official Multiset example behavior: keep the 3D group hidden until
+      // localization succeeds, then apply the returned map-to-world pose and
+      // reveal it at the selected office's real Multiset map coordinate.
+      if (!navGroup) return;
+
+      const destination = selectedDestination.value;
+      if (!destination) {
+        hideNavigationPath();
+        vpsActive.value = false;
+        errorMsg.value = `No AR coordinate is configured for ${officeName.value}. Choose Dean, Registrar, Cashier, or Guard House.`;
+        return;
+      }
+
+      const { x, y, z } = destination.multiset;
+      const mapPosition = new THREE.Vector3(-x, y, z).applyMatrix4(worldFromMap);
+      destinationWorldPosition.copy(mapPosition);
+      pathwayWorldPoints.length = 0;
+      AR_PATHWAY_POINTS.forEach((point) => {
+        pathwayWorldPoints.push(
+          new THREE.Vector3(-point.x, point.y, point.z).applyMatrix4(worldFromMap),
+        );
+      });
+      hasDestinationWorldPosition = true;
+      hasPathwayWorldPoints = pathwayWorldPoints.length > 1;
+      destinationPathwayIndex = findNearestPathwayIndex(destinationWorldPosition);
+      rebuildPathwaySegments(pathwayWorldPoints);
+      navGroup.visible = false;
+      updateNavigationPath();
     },
     onXRFrame: () => {
       // ThreeAdapter renders the scene after this callback with its synced XR
@@ -437,21 +632,6 @@ async function setupMultisetVps() {
   // still allowing Multiset's ThreeAdapter to own the actual session loop.
   renderer.xr.enabled = true;
   multisetAdapter.initialize();
-}
-
-async function localizeWithVps() {
-  if (!multisetAdapter || multisetAdapter.isLocalizing) return;
-
-  try {
-    const result = await multisetAdapter.localizeFrame();
-    if (!result) {
-      vpsActive.value = false;
-    }
-  } catch (error) {
-    console.warn("Multiset localization failed:", error);
-    vpsActive.value = false;
-    errorMsg.value = describeArError(error, "VPS localization failed. Move slowly and try again in the mapped area.");
-  }
 }
 
 function describeArError(err, fallback) {
@@ -467,6 +647,35 @@ function handleArError(err, fallback) {
   started.value = false;
   xrActive.value = false;
   vpsActive.value = false;
+  localizationFailed.value = false;
+  hideNavigationPath();
+}
+
+async function retryLocalization() {
+  if (!multisetAdapter?.isActive() || retryingLocalization.value) return;
+
+  retryingLocalization.value = true;
+  localizationFailed.value = false;
+  errorMsg.value = "";
+  hideNavigationPath();
+
+  try {
+    const result = await multisetAdapter.localizeFrame();
+    if (!result) {
+      localizationFailed.value = true;
+    }
+  } catch (err) {
+    console.warn("Multiset localization retry failed:", err);
+    vpsActive.value = false;
+    localizationFailed.value = true;
+    hideNavigationPath();
+    errorMsg.value = describeArError(
+      err,
+      "VPS localization failed. Move slowly and try again in the mapped area.",
+    );
+  } finally {
+    retryingLocalization.value = false;
+  }
 }
 
 function onClose() {
@@ -491,17 +700,29 @@ function cleanup() {
     renderer.dispose();
     renderer = null;
   }
+  hideNavigationPath();
+  navGroup = null;
+  pathGroup = null;
+  userConnectorLine = null;
+  destinationConnectorLine = null;
+  hasDestinationWorldPosition = false;
+  hasPathwayWorldPoints = false;
+  destinationPathwayIndex = -1;
+  pathwayWorldPoints.length = 0;
+  routeWorldPoints.length = 0;
   arReady.value = false;
   started.value = false;
   xrActive.value = false;
   vpsActive.value = false;
+  localizationFailed.value = false;
+  retryingLocalization.value = false;
   lastSessionError = null;
 }
 
 onBeforeUnmount(cleanup);
 
 onMounted(() => {
-  // Office id from query param — used by future backend hookup
+  // Office id from query param, used by future backend hookup
   if (!officeId.value) {
     errorMsg.value = "No destination specified.";
     return;
