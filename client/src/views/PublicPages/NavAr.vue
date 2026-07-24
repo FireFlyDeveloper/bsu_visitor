@@ -157,7 +157,10 @@
       <div
         class="max-w-[94vw] rounded-2xl border border-white/12 bg-black/48 px-3 py-2 text-center text-xs font-medium leading-5 text-white/76 shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur"
       >
-        {{ localizationFailed ? "Move to the mapped area, keep the camera steady, then retry localization." : "Keep the phone steady and follow the red pathway after localization." }}
+        {{ localizationFailed ? "Move to the mapped area, keep the camera steady, then retry localization." : "Keep the phone steady and follow the red arrows after localization." }}
+        <span v-if="arrivalEvent" class="mt-1 block font-bold text-emerald-100">
+          {{ arrivalEvent }}
+        </span>
         <span v-if="errorMsg" class="block text-rose-100">{{ errorMsg }}</span>
         <button
           v-if="localizationFailed"
@@ -225,6 +228,10 @@ const xrActive = ref(false);
 const displayBearing = ref(0); // final bearing shown in HUD
 const localizationFailed = ref(false);
 const retryingLocalization = ref(false);
+const arrivalEvent = ref("");
+const hasAnnouncedArrival = ref(false);
+const ARRIVAL_PROXIMITY_METERS = 2.2;
+const ARRIVAL_MESSAGE = "You’ve arrived to your destination";
 
 // Multiset VPS config. The map id is public and pinned for the BSU map.
 // Real credentials stay server-side behind /api/multiset/token; the browser
@@ -246,7 +253,6 @@ const userWorldPosition = new THREE.Vector3();
 const destinationWorldPosition = new THREE.Vector3();
 const pathwayWorldPoints = [];
 const routeWorldPoints = [];
-const pathMidpoint = new THREE.Vector3();
 const pathDirection = new THREE.Vector3();
 const pathUp = new THREE.Vector3(0, 1, 0);
 const pathwayMaterial = new THREE.MeshBasicMaterial({
@@ -255,6 +261,7 @@ const pathwayMaterial = new THREE.MeshBasicMaterial({
   opacity: 0.96,
   depthTest: false,
 });
+const arrowGeometry = new THREE.ConeGeometry(0.18, 0.52, 4);
 
 async function prepareAr() {
   if (arReady.value || preparing.value) return;
@@ -365,8 +372,8 @@ async function initThree() {
   navGroup.visible = false;
   scene.add(navGroup);
 
-  // Primary route path. Use a thin cylinder instead of THREE.Line because
-  // mobile WebGL/WebXR commonly ignores line thickness hints.
+  // Primary route path. Use directional arrow meshes instead of a solid line
+  // so visitors can see where to move along the building pathway.
   pathGroup = new THREE.Group();
   pathGroup.visible = false;
   scene.add(pathGroup);
@@ -412,6 +419,11 @@ function hideNavigationPath() {
   if (userConnectorLine) userConnectorLine.visible = false;
   if (destinationConnectorLine) destinationConnectorLine.visible = false;
   if (destinationLabelSprite) destinationLabelSprite.visible = false;
+}
+
+function resetArrivalState() {
+  arrivalEvent.value = "";
+  hasAnnouncedArrival.value = false;
 }
 
 function createDestinationLabelTexture(label) {
@@ -487,14 +499,13 @@ function updateDestinationLabel(label, position) {
 }
 
 function createPathSegmentMesh() {
-  const geometry = new THREE.CylinderGeometry(0.06, 0.06, 1, 16, 1, true);
-  const segment = new THREE.Mesh(geometry, pathwayMaterial);
+  const segment = new THREE.Group();
   segment.frustumCulled = false;
-  segment.renderOrder = 1000;
   return segment;
 }
 
 function placeSegment(segment, start, end) {
+  segment.clear();
   pathDirection.subVectors(end, start);
   const distance = pathDirection.length();
   if (distance < 0.08) {
@@ -502,10 +513,20 @@ function placeSegment(segment, start, end) {
     return;
   }
 
-  pathMidpoint.copy(start).add(end).multiplyScalar(0.5);
-  segment.position.copy(pathMidpoint);
-  segment.scale.set(1, distance, 1);
-  segment.quaternion.setFromUnitVectors(pathUp, pathDirection.normalize());
+  const direction = pathDirection.normalize();
+  const arrowCount = Math.max(1, Math.floor(distance / 1.05));
+  const arrowSpacing = distance / (arrowCount + 1);
+
+  for (let i = 0; i < arrowCount; i += 1) {
+    const arrow = new THREE.Mesh(arrowGeometry, pathwayMaterial);
+    arrow.frustumCulled = false;
+    arrow.renderOrder = 1000;
+    arrow.position.copy(start).addScaledVector(direction, arrowSpacing * (i + 1));
+    arrow.position.y += 0.04;
+    arrow.quaternion.setFromUnitVectors(pathUp, direction);
+    segment.add(arrow);
+  }
+
   segment.visible = true;
 }
 
@@ -553,6 +574,7 @@ function updateNavigationPath() {
   }
 
   camera.getWorldPosition(userWorldPosition);
+  checkArrivalProximity();
   const userPathwayIndex = findNearestPathwayIndex(userWorldPosition);
   const startIndex = Math.min(userPathwayIndex, destinationPathwayIndex);
   const endIndex = Math.max(userPathwayIndex, destinationPathwayIndex);
@@ -571,6 +593,28 @@ function updateNavigationPath() {
     destinationWorldPosition,
   );
   pathGroup.visible = routeWorldPoints.length > 1;
+}
+
+function checkArrivalProximity() {
+  if (hasAnnouncedArrival.value || !hasDestinationWorldPosition) return;
+
+  const distanceToDestination = userWorldPosition.distanceTo(destinationWorldPosition);
+  if (distanceToDestination > ARRIVAL_PROXIMITY_METERS) return;
+
+  hasAnnouncedArrival.value = true;
+  arrivalEvent.value = ARRIVAL_MESSAGE;
+  speakArrivalMessage();
+}
+
+function speakArrivalMessage() {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(ARRIVAL_MESSAGE);
+  utterance.lang = "en-US";
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+  window.speechSynthesis.speak(utterance);
 }
 
 function updateSceneForFrame() {
@@ -616,6 +660,7 @@ async function setupMultisetVps() {
       xrActive.value = true;
       vpsActive.value = false;
       localizationFailed.value = false;
+      resetArrivalState();
       hideNavigationPath();
       lastSessionError = null;
     },
@@ -624,6 +669,7 @@ async function setupMultisetVps() {
       xrActive.value = false;
       vpsActive.value = false;
       localizationFailed.value = false;
+      resetArrivalState();
       hideNavigationPath();
     },
     onLocalizationInit: () => {
@@ -637,6 +683,7 @@ async function setupMultisetVps() {
       console.warn("Multiset localization failed:", reason);
       vpsActive.value = false;
       localizationFailed.value = true;
+      resetArrivalState();
       hideNavigationPath();
       errorMsg.value = describeArError(reason, "VPS localization failed. Move slowly and try again in the mapped area.");
     },
@@ -726,6 +773,7 @@ function handleArError(err, fallback) {
   xrActive.value = false;
   vpsActive.value = false;
   localizationFailed.value = false;
+  resetArrivalState();
   hideNavigationPath();
 }
 
@@ -735,6 +783,7 @@ async function retryLocalization() {
   retryingLocalization.value = true;
   localizationFailed.value = false;
   errorMsg.value = "";
+  resetArrivalState();
   hideNavigationPath();
 
   try {
@@ -795,6 +844,7 @@ function cleanup() {
   vpsActive.value = false;
   localizationFailed.value = false;
   retryingLocalization.value = false;
+  resetArrivalState();
   lastSessionError = null;
 }
 
