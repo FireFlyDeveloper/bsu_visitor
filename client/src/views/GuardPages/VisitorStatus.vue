@@ -64,7 +64,7 @@
           >
             <img
               v-if="log.visitor_img"
-              :src="`/${log.visitor_img}`"
+              :src="visitorImageUrl(log.visitor_img)"
               class="h-10 w-10 rounded-full object-cover"
             />
             <div
@@ -127,7 +127,16 @@
               >
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--paper-2)] text-sm font-semibold text-[var(--ink-2)]">
+                    <img
+                      v-if="log.visitor_img"
+                      :src="visitorImageUrl(log.visitor_img)"
+                      class="h-9 w-9 rounded-full object-cover"
+                      alt=""
+                    />
+                    <div
+                      v-else
+                      class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--paper-2)] text-sm font-semibold text-[var(--ink-2)]"
+                    >
                       {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
                     </div>
                     <div>
@@ -176,6 +185,8 @@ import { useSecurityAlarm } from "@/composables/useSecurityAlarm";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { stagger } from "@/composables/useStagger";
+import { visitorImageUrl } from "@/utils/visitorImageUrl";
+import { elapsedFromServerTime, formatServerTime } from "@/utils/dateTime";
 
 const store = useVisitorLogStore();
 const toast = useToast();
@@ -199,19 +210,7 @@ let activePollHandle = null;
 watch(alarmMinutes, (v) => localStorage.setItem("visitor_alarm_minutes", String(v)));
 
 function computeTimeSpent(log) {
-  const start = new Date(log.time_in);
-  const end = log.time_out ? new Date(log.time_out) : new Date(now.value);
-  const diffMs = end - start;
-  const minutes = Math.floor(diffMs / 60000);
-  const seconds = Math.floor((diffMs % 60000) / 1000);
-  return {
-    minutes,
-    seconds,
-    formatted: `${minutes}:${seconds.toString().padStart(2, "0")}`,
-    display: minutes >= 60
-      ? `${Math.floor(minutes / 60)}h ${minutes % 60}m`
-      : `${minutes}m ${seconds}s`,
-  };
+  return elapsedFromServerTime(log.time_in, new Date(now.value));
 }
 
 function toggleAlarm() {
@@ -221,7 +220,7 @@ function toggleAlarm() {
 
 const logsWithTime = computed(() =>
   store.logs
-    .filter((log) => log.status !== "left")
+    .filter((log) => !log.left_at && log.status !== "left")
     .map((log) => {
       const t = computeTimeSpent(log);
       return { ...log, ...t, isAlarm: t.minutes >= Number(alarmMinutes.value) };
@@ -244,28 +243,8 @@ watch(
   { deep: true },
 );
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
 async function markAsLeft(log) {
-  try {
-    const response = await fetch(
-      `${API_BASE}/visitor-status/${log.id}/status`,
-      {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "left" }),
-      },
-    );
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body?.error || `HTTP ${response.status}`);
-    }
-    store.logs = store.logs.filter((l) => l.id !== log.id);
-    toast.success(`${log.visitor_name} marked left`);
-  } catch (err) {
-    toast.error(err?.message || "Could not mark left");
-  }
+  await onSignOut(log);
 }
 
 function getProgressPercentage(minutes) {
@@ -275,10 +254,7 @@ function getProgressPercentage(minutes) {
 }
 
 function formatTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return formatServerTime(value);
 }
 
 async function pollOverdue() {
@@ -294,7 +270,7 @@ async function onSignOut(log) {
     await store.signOutVisitor(log.id);
     toast.success(`${log.visitor_name} signed out`);
     await pollOverdue();
-    await store.fetchVisitLogs();
+    await store.fetchActiveVisitors();
   } catch (err) {
     toast.error("Sign-out failed");
   } finally {
@@ -304,10 +280,12 @@ async function onSignOut(log) {
 
 let timer;
 onMounted(() => {
-  store.fetchVisitLogs();
+  store.fetchActiveVisitors();
   timer = setInterval(() => { now.value = Date.now(); }, 1000);
   pollOverdue();
-  activePollHandle = setInterval(pollOverdue, 5000);
+  activePollHandle = setInterval(async () => {
+    await Promise.all([pollOverdue(), store.fetchActiveVisitors()]);
+  }, 5000);
 });
 
 onUnmounted(() => {

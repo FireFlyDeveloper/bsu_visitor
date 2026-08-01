@@ -171,6 +171,7 @@ import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { useVisitorLogStore } from "@/store/visitorLog";
+import { formatServerDateTime } from "@/utils/dateTime";
 
 const visitorLogStore = useVisitorLogStore();
 
@@ -221,15 +222,7 @@ function changePage(page) {
 }
 
 function formatDateTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  return d.toLocaleString([], {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatServerDateTime(value);
 }
 
 function statusTone(s) {

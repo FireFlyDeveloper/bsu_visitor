@@ -218,11 +218,11 @@ const kpi = computed(() => {
     ).length,
     visitsToday: visits.filter((v) => {
       const ts = v.time_in || v.created_at;
-      return ts && new Date(ts).toDateString() === todayKey;
+      return ts && parseServerDate(ts)?.toDateString() === todayKey;
     }).length,
     visitsYesterday: visits.filter((v) => {
       const ts = v.time_in || v.created_at;
-      return ts && new Date(ts).toDateString() === yesterdayKey;
+      return ts && parseServerDate(ts)?.toDateString() === yesterdayKey;
     }).length,
   };
 });
@@ -275,15 +275,7 @@ function statusDot(s) {
 }
 
 function formatTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatServerDateTime(value);
 }
 
 async function refreshAll() {

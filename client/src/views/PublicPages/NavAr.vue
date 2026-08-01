@@ -254,14 +254,33 @@ const destinationWorldPosition = new THREE.Vector3();
 const pathwayWorldPoints = [];
 const routeWorldPoints = [];
 const pathDirection = new THREE.Vector3();
-const pathUp = new THREE.Vector3(0, 1, 0);
+const ARROW_FLOOR_LIFT_METERS = 0.012;
+const ARROW_LAYER_OFFSET_METERS = 0.002;
 const pathwayMaterial = new THREE.MeshBasicMaterial({
   color: 0xd0112b,
   transparent: true,
-  opacity: 0.96,
+  opacity: 0.98,
   depthTest: false,
+  side: THREE.DoubleSide,
 });
-const arrowGeometry = new THREE.ConeGeometry(0.18, 0.52, 4);
+const arrowBackingMaterial = new THREE.MeshBasicMaterial({
+  color: 0x050506,
+  transparent: true,
+  opacity: 0.86,
+  depthTest: false,
+  side: THREE.DoubleSide,
+});
+const arrowHighlightMaterial = new THREE.MeshBasicMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.92,
+  depthTest: false,
+  side: THREE.DoubleSide,
+});
+const arrowGeometry = createChevronArrowGeometry(0.42, 0.58);
+const arrowBackingGeometry = createChevronArrowGeometry(0.52, 0.68);
+const arrowHighlightGeometry = createChevronArrowGeometry(0.16, 0.28);
+const labelOffset = new THREE.Vector3(0, 1.65, 0);
 
 async function prepareAr() {
   if (arReady.value || preparing.value) return;
@@ -430,29 +449,39 @@ function createDestinationLabelTexture(label) {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const width = 512;
-  const height = 160;
+  const width = 768;
+  const height = 256;
   canvas.width = width * dpr;
   canvas.height = height * dpr;
   context.scale(dpr, dpr);
 
   context.clearRect(0, 0, width, height);
-  context.fillStyle = "rgba(8, 8, 10, 0.88)";
-  roundRect(context, 18, 26, width - 36, 92, 30);
+  context.shadowColor = "rgba(0, 0, 0, 0.9)";
+  context.shadowBlur = 18;
+  context.shadowOffsetY = 8;
+  context.fillStyle = "rgba(0, 0, 0, 0.94)";
+  roundRect(context, 16, 28, width - 32, 174, 38);
   context.fill();
-  context.strokeStyle = "rgba(255, 255, 255, 0.26)";
-  context.lineWidth = 3;
+  context.shadowColor = "transparent";
+  context.strokeStyle = "rgba(255, 255, 255, 0.92)";
+  context.lineWidth = 5;
   context.stroke();
 
   context.fillStyle = "#d0112b";
-  roundRect(context, 36, 46, 18, 52, 9);
+  roundRect(context, 42, 62, 20, 108, 10);
   context.fill();
 
+  context.fillStyle = "rgba(255, 255, 255, 0.72)";
+  context.font = "800 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillText("DESTINATION", 86, 78);
+
   context.fillStyle = "#ffffff";
-  context.font = "700 34px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  context.font = "900 52px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   context.textAlign = "center";
   context.textBaseline = "middle";
-  context.fillText(label, width / 2 + 14, 72, width - 116);
+  context.fillText(label, width / 2 + 24, 132, width - 150);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -484,7 +513,7 @@ function createDestinationLabelSprite(label) {
   const sprite = new THREE.Sprite(material);
   sprite.frustumCulled = false;
   sprite.renderOrder = 1001;
-  sprite.scale.set(1.9, 0.6, 1);
+  sprite.scale.set(3.4, 1.14, 1);
   return sprite;
 }
 
@@ -494,8 +523,28 @@ function updateDestinationLabel(label, position) {
   destinationLabelSprite.material.map?.dispose();
   destinationLabelSprite.material.map = createDestinationLabelTexture(label);
   destinationLabelSprite.material.needsUpdate = true;
-  destinationLabelSprite.position.copy(position).add(new THREE.Vector3(0, 1.05, 0));
+  destinationLabelSprite.scale.set(3.4, 1.14, 1);
+  destinationLabelSprite.position.copy(position).add(labelOffset);
   destinationLabelSprite.visible = true;
+}
+
+function createChevronArrowGeometry(width = 0.74, length = 0.94) {
+  const halfWidth = width / 2;
+  const notchDepth = length * 0.42;
+  const shaftHalfWidth = width * 0.18;
+  const vertices = new Float32Array([
+    0, 0, length / 2,
+    halfWidth, 0, -notchDepth / 2,
+    shaftHalfWidth, 0, -length / 2,
+    0, 0, -length * 0.24,
+    -shaftHalfWidth, 0, -length / 2,
+    -halfWidth, 0, -notchDepth / 2,
+  ]);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+  geometry.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5]);
+  geometry.computeVertexNormals();
+  return geometry;
 }
 
 function createPathSegmentMesh() {
@@ -504,30 +553,66 @@ function createPathSegmentMesh() {
   return segment;
 }
 
-function placeSegment(segment, start, end) {
+function createDirectionalArrowMesh() {
+  const arrow = new THREE.Group();
+  const backing = new THREE.Mesh(arrowBackingGeometry, arrowBackingMaterial);
+  const body = new THREE.Mesh(arrowGeometry, pathwayMaterial);
+  const highlight = new THREE.Mesh(arrowHighlightGeometry, arrowHighlightMaterial);
+
+  backing.position.y = -ARROW_LAYER_OFFSET_METERS;
+  body.position.y = 0;
+  highlight.position.y = ARROW_LAYER_OFFSET_METERS;
+  backing.renderOrder = 998;
+  body.renderOrder = 1000;
+  highlight.renderOrder = 1001;
+
+  [backing, body, highlight].forEach((mesh) => {
+    mesh.frustumCulled = false;
+    arrow.add(mesh);
+  });
+
+  return arrow;
+}
+
+function placeSegment(segment, start, end, floorY = getFloorBaselineY(start, end)) {
   segment.clear();
   pathDirection.subVectors(end, start);
-  const distance = pathDirection.length();
-  if (distance < 0.08) {
+  const horizontalDistance = Math.hypot(pathDirection.x, pathDirection.z);
+  if (horizontalDistance < 0.08) {
     segment.visible = false;
     return;
   }
 
-  const direction = pathDirection.normalize();
-  const arrowCount = Math.max(1, Math.floor(distance / 1.05));
-  const arrowSpacing = distance / (arrowCount + 1);
+  const direction = pathDirection.set(
+    pathDirection.x / horizontalDistance,
+    0,
+    pathDirection.z / horizontalDistance,
+  );
+  const arrowCount = Math.max(1, Math.floor(horizontalDistance / 1.6));
+  const arrowSpacing = horizontalDistance / (arrowCount + 1);
+  const heading = Math.atan2(direction.x, direction.z);
 
   for (let i = 0; i < arrowCount; i += 1) {
-    const arrow = new THREE.Mesh(arrowGeometry, pathwayMaterial);
-    arrow.frustumCulled = false;
-    arrow.renderOrder = 1000;
-    arrow.position.copy(start).addScaledVector(direction, arrowSpacing * (i + 1));
-    arrow.position.y += 0.04;
-    arrow.quaternion.setFromUnitVectors(pathUp, direction);
+    const arrow = createDirectionalArrowMesh();
+    arrow.position.set(
+      start.x + direction.x * arrowSpacing * (i + 1),
+      floorY + ARROW_FLOOR_LIFT_METERS,
+      start.z + direction.z * arrowSpacing * (i + 1),
+    );
+    arrow.rotation.y = heading;
     segment.add(arrow);
   }
 
   segment.visible = true;
+}
+
+function getFloorBaselineY(...points) {
+  const finiteYValues = points
+    .map((point) => point?.y)
+    .filter((y) => Number.isFinite(y));
+
+  if (!finiteYValues.length) return 0;
+  return Math.min(...finiteYValues);
 }
 
 function findNearestPathwayIndex(position) {
@@ -548,10 +633,11 @@ function findNearestPathwayIndex(position) {
 function rebuildPathwaySegments(points = routeWorldPoints) {
   if (!pathGroup) return;
 
+  const floorY = getFloorBaselineY(...points);
   pathGroup.clear();
   for (let i = 0; i < points.length - 1; i += 1) {
     const segment = createPathSegmentMesh();
-    placeSegment(segment, points[i], points[i + 1]);
+    placeSegment(segment, points[i], points[i + 1], floorY);
     pathGroup.add(segment);
   }
   pathGroup.visible = points.length > 1;

@@ -9,7 +9,7 @@ class Office {
         COALESCE((
           SELECT COUNT(*)
           FROM visit_logs vl
-          WHERE vl.office_id = o.id AND vl.time_out IS NULL
+          WHERE vl.office_id = o.id AND vl.status IN ('pending', 'processing') AND vl.left_at IS NULL
         ), 0) AS queue_count
       FROM offices o
       WHERE o.id = ?
@@ -49,7 +49,7 @@ class Office {
         COALESCE((
           SELECT COUNT(*)
           FROM visit_logs vl
-          WHERE vl.office_id = o.id AND vl.time_out IS NULL
+          WHERE vl.office_id = o.id AND vl.status IN ('pending', 'processing') AND vl.left_at IS NULL
         ), 0) AS queue_count
       FROM offices o
     `);

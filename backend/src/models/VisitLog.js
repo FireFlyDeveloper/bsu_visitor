@@ -8,28 +8,33 @@ class VisitLog {
       purpose,
       logged_by,
       status = "pending",
+      visitor_img = null,
     } = logData;
 
     const stmt = db.prepare(`
-    INSERT INTO visit_logs (visitor_id, office_id, purpose, logged_by, status)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO visit_logs (visitor_id, office_id, purpose, logged_by, status, visitor_img)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
 
-    const result = stmt.run(visitor_id, office_id, purpose, logged_by, status);
+    const result = stmt.run(visitor_id, office_id, purpose, logged_by, status, visitor_img);
     return result.lastInsertRowid;
   }
 
   static countPerOffice() {
     const stmt = db.prepare(`
-    SELECT 
-      l.office_id,
-      o.office_name,
-      COUNT(*) AS total_visits
-    FROM visit_logs l
-    JOIN offices o ON o.id = l.office_id
-    GROUP BY l.office_id
-    ORDER BY total_visits DESC
-  `);
+      SELECT
+        o.id AS office_id,
+        o.office_name,
+        'pending' AS status,
+        COALESCE(COUNT(l.id), 0) AS total_visits
+      FROM offices o
+      LEFT JOIN visit_logs l
+        ON l.office_id = o.id
+        AND l.status IN ('pending', 'processing')
+        AND l.left_at IS NULL
+      GROUP BY o.id
+      ORDER BY total_visits DESC, o.office_name ASC
+    `);
 
     return stmt.all();
   }
@@ -85,7 +90,7 @@ class VisitLog {
       v.fullname AS visitor_name,
       v.contact_number,
       v.address AS visitor_address,
-      v.img AS visitor_img,
+      COALESCE(l.visitor_img, v.img) AS visitor_img,
       o.office_name
     FROM visit_logs l
     JOIN visitors v ON v.id = l.visitor_id
@@ -125,7 +130,10 @@ class VisitLog {
 
   static findActiveVisits() {
     const stmt = db.prepare(`
-      SELECT * FROM visit_logs WHERE time_out IS NULL
+      SELECT *
+      FROM visit_logs
+      WHERE left_at IS NULL
+      ORDER BY time_in DESC
     `);
     return stmt.all();
   }
@@ -193,7 +201,7 @@ class VisitLog {
       v.fullname AS visitor_name,
       v.contact_number,
       v.address AS visitor_address,
-      v.img AS visitor_img,
+      COALESCE(l.visitor_img, v.img) AS visitor_img,
       o.office_name
     FROM visit_logs l
     JOIN visitors v ON v.id = l.visitor_id
@@ -234,7 +242,9 @@ class VisitLog {
   static markLeft(id) {
     const stmt = db.prepare(`
       UPDATE visit_logs
-      SET left_at = CURRENT_TIMESTAMP
+      SET left_at = COALESCE(left_at, CURRENT_TIMESTAMP),
+          time_out = COALESCE(time_out, CURRENT_TIMESTAMP),
+          status = 'left'
       WHERE id = ? AND left_at IS NULL
     `);
     const result = stmt.run(id);
@@ -244,7 +254,7 @@ class VisitLog {
   static findOverdue({ limit = 50, overdueMinutes = 30 } = {}) {
     // An overdue visit is one that the office has already marked
     // 'completed' (i.e. the visit itself is over) but the visitor
-    // has not yet left the guard house. The 30-minute grace window
+    // has not yet left the guard house. The configurable grace window
     // starts when the visit was completed (time_out), so the alarm
     // only fires once that window has elapsed. Rows where time_out
     // is NULL (legacy data) are kept so they cannot silently slip
@@ -263,7 +273,7 @@ class VisitLog {
         l.left_at,
         v.fullname AS visitor_name,
         v.contact_number,
-        v.img AS visitor_img,
+        COALESCE(l.visitor_img, v.img) AS visitor_img,
         o.office_name,
         CASE
           WHEN l.time_out IS NULL THEN NULL
@@ -301,7 +311,7 @@ class VisitLog {
         v.fullname AS visitor_name,
         v.contact_number,
         v.address AS visitor_address,
-        v.img AS visitor_img,
+        COALESCE(l.visitor_img, v.img) AS visitor_img,
         o.office_name
       FROM visit_logs l
       JOIN visitors v ON v.id = l.visitor_id

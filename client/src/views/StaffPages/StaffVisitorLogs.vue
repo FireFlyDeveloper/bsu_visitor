@@ -405,6 +405,7 @@
 </template>
 
 <script setup>
+import { formatServerDateTime } from "@/utils/dateTime";
 import { ref, onMounted } from "vue";
 import { useVisitorLogStore } from "../../store/visitorLog";
 
@@ -470,19 +471,7 @@ const confirmDelete = async () => {
 };
 
 // Format date
-const formatDateTime = (value) => {
-  if (!value) return "-";
-
-  const date = new Date(value);
-
-  return date.toLocaleString([], {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+const formatDateTime = (value) => formatServerDateTime(value);
 
 // Load logs when component mounts
 onMounted(() => {

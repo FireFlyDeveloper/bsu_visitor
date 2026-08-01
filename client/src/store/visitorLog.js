@@ -7,6 +7,7 @@ if (!API_BASE) {
 }
 
 const VISITOR_LOG_ENDPOINT = `${API_BASE}/visit-logs`;
+const SECURITY_ALARM_OVERDUE_MINUTES = 1;
 
 function handleResponse(response) {
   return response.json().then((body) => {
@@ -135,7 +136,40 @@ export const useVisitorLogStore = defineStore("visitorLog", {
     },
 
     async fetchPendingVisitLogs({ page = 1, perPage = 20 } = {}) {
-      return this.fetchByStatus({ status: "pending", page, perPage });
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const params = new URLSearchParams({
+          limit: String(perPage),
+          offset: String((page - 1) * perPage),
+        });
+
+        const response = await fetch(
+          `${VISITOR_LOG_ENDPOINT}/pending?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
+
+        const data = await handleResponse(response);
+        const rows = data.data || [];
+
+        this.logs = rows;
+        this.total = data.total || 0;
+        this.page = page;
+        this.perPage = perPage;
+
+        return data;
+      } catch (error) {
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     },
 
     async deleteLog(id) {
@@ -213,14 +247,49 @@ export const useVisitorLogStore = defineStore("visitorLog", {
       }
     },
 
-    async fetchOverdue() {
+    async fetchActiveVisitors() {
+      this.loading = true;
+      this.error = null;
+
       try {
-        const response = await fetch(`${VISITOR_LOG_ENDPOINT}/overdue`, {
+        const response = await fetch(`${API_BASE}/security-guard/visitors/active`, {
           credentials: "include",
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
+
+        const data = await handleResponse(response);
+        const rows = (data.data || []).map((log) => ({
+          ...log,
+          id: log.id ?? log.log_id,
+        }));
+
+        this.logs = rows;
+        this.total = data.total ?? rows.length;
+        return { ...data, data: rows };
+      } catch (error) {
+        this.error = error.message;
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchOverdue({ overdueMinutes = SECURITY_ALARM_OVERDUE_MINUTES } = {}) {
+      try {
+        const params = new URLSearchParams({
+          overdue_minutes: String(overdueMinutes),
+        });
+        const response = await fetch(
+          `${VISITOR_LOG_ENDPOINT}/overdue?${params.toString()}`,
+          {
+            credentials: "include",
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("token"),
+            },
+          },
+        );
         if (!response.ok) return { overdue: [], total: 0 };
         return await response.json();
       } catch (error) {

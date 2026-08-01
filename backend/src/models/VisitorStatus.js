@@ -19,6 +19,10 @@ class VisitorStatus {
       query += `, time_out = COALESCE(time_out, CURRENT_TIMESTAMP)`;
     }
 
+    if (status === "left") {
+      query += `, left_at = COALESCE(left_at, CURRENT_TIMESTAMP), time_out = COALESCE(time_out, CURRENT_TIMESTAMP)`;
+    }
+
     query += ` WHERE id = ?`;
     params.push(visitLogId);
 
@@ -65,6 +69,7 @@ class VisitorStatus {
       v.fullname AS visitor_name,
       v.contact_number,
       v.address AS visitor_address,
+      COALESCE(l.visitor_img, v.img) AS visitor_img,
       o.office_name
     FROM visit_logs l
     JOIN visitors v ON v.id = l.visitor_id

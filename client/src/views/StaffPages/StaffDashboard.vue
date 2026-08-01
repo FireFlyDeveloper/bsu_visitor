@@ -70,7 +70,7 @@
           <div>
             <p class="eyebrow">Visitors waiting</p>
             <p class="font-display mt-1 text-2xl font-bold tabular">
-              {{ pendingLogs.length }}
+              {{ pendingTotal }}
               <span class="text-base font-normal text-[var(--ink-3)]">pending</span>
             </p>
           </div>
@@ -102,7 +102,7 @@
           >
             <img
               v-if="log.visitor_img"
-              :src="`/${log.visitor_img}`"
+              :src="visitorImageUrl(log.visitor_img)"
               class="h-16 w-16 rounded-2xl object-cover"
               alt=""
             />
@@ -146,12 +146,15 @@ import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { stagger } from "@/composables/useStagger";
+import { visitorImageUrl } from "@/utils/visitorImageUrl";
+import { formatServerTime } from "@/utils/dateTime";
 
 const officeStore = useOfficeStore();
 const visitorLogStore = useVisitorLogStore();
 const toast = useToast();
 
 const pendingLogs = ref([]);
+const pendingTotal = ref(0);
 const pendingLoading = ref(false);
 const marking = ref(null);
 
@@ -186,6 +189,7 @@ async function refreshPending() {
   try {
     const data = await visitorLogStore.fetchPendingVisitLogs({ perPage: 20 });
     pendingLogs.value = data.data || data.logs || [];
+    pendingTotal.value = data.total ?? pendingLogs.value.length;
   } catch (err) {
     console.error(err);
   } finally {
@@ -198,7 +202,10 @@ async function markDone(log) {
   try {
     await visitorLogStore.markDone(log.id);
     toast.success(`${log.visitor_name} marked done`);
-    await refreshPending();
+    await Promise.all([
+      refreshPending(),
+      officeStore.fetchOfficeDashboard(),
+    ]);
   } catch (err) {
     toast.error(err?.message || "Could not mark done");
   } finally {
@@ -215,10 +222,7 @@ async function changeStatus(status) {
 }
 
 function formatTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return formatServerTime(value);
 }
 
 onMounted(async () => {

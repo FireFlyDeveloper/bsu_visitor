@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS visit_logs (
     office_id INTEGER NOT NULL,
     purpose TEXT,
     status TEXT,
+    visitor_img TEXT,
     time_in DATETIME DEFAULT CURRENT_TIMESTAMP,
     time_out DATETIME,
     left_at DATETIME,

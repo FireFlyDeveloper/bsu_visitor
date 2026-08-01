@@ -45,7 +45,7 @@
         >
           <img
             v-if="log.visitor_img"
-            :src="`/${log.visitor_img}`"
+            :src="visitorImageUrl(log.visitor_img)"
             class="h-9 w-9 rounded-full object-cover"
             alt=""
           />
@@ -105,6 +105,7 @@ import { ref, computed, onMounted } from "vue";
 import { useSecurityAlarm } from "@/composables/useSecurityAlarm";
 import { useVisitorLogStore } from "@/store/visitorLog";
 import { useToast } from "@/composables/useToast";
+import { visitorImageUrl } from "@/utils/visitorImageUrl";
 
 const { overdue, overdueCount, enabled, lastUpdated, toggle, acknowledge } =
   useSecurityAlarm();

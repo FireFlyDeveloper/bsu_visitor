@@ -5,3 +5,4 @@ import "./createUserTable.js";
 import "./createActivityLogTable.js";
 import "./createVisitorLogTable.js";
 import "./migrateLeftAt.js";
+import "./migrateVisitLogVisitorImg.js";

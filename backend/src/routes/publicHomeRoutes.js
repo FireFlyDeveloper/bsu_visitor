@@ -47,11 +47,12 @@ router.get("/visitors/active", (req, res) => {
       const visitor = Visitor.findById(log.visitor_id) || {};
       const office = Office.findById(log.office_id);
       return {
+        id: log.id,
         log_id: log.id,
         visitor_id: log.visitor_id,
         visitor_name: visitor.fullname || null,
         contact_number: visitor.contact_number || null,
-        visitor_img: absoluteUrl(req, visitor.img || null),
+        visitor_img: absoluteUrl(req, log.visitor_img || visitor.img || null),
         office_id: log.office_id,
         office_name: office?.office_name || null,
         purpose: log.purpose,

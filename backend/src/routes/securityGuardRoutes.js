@@ -12,6 +12,14 @@ import { activityLogger } from "../middleware/activityLogger.js";
 
 const router = express.Router();
 
+function absoluteUrl(req, relativePath) {
+  if (!relativePath) return null;
+  if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
+    return relativePath;
+  }
+  return `${req.protocol}://${req.get("host")}/${relativePath}`;
+}
+
 router.use(authMiddleware, activityLogger);
 
 // Guard kiosk — register a visitor at the school entrance.
@@ -52,11 +60,12 @@ router.get(
         const visitor = Visitor.findById(log.visitor_id) || {};
         const office = Office.findById(log.office_id);
         return {
+          id: log.id,
           log_id: log.id,
           visitor_id: log.visitor_id,
           visitor_name: visitor.fullname || null,
           contact_number: visitor.contact_number || null,
-          visitor_img: visitor.img || null,
+          visitor_img: absoluteUrl(req, log.visitor_img || visitor.img || null),
           office_id: log.office_id,
           office_name: office?.office_name || null,
           purpose: log.purpose,

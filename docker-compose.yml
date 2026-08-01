@@ -30,13 +30,14 @@ services:
       MULTISET_CLIENT_ID: ${MULTISET_CLIENT_ID:-}
       MULTISET_CLIENT_SECRET: ${MULTISET_CLIENT_SECRET:-}
       MULTISET_MAP_CODE: ${MULTISET_MAP_CODE:-MAP_GCEL3WD6ACQL}
+      DATABASE_PATH: /app/data/database.db
       # Allow the proxy origin (same-origin) and the public HTTPS URL.
       # CORS is permissive for same-origin; the public URL is here as
       # a safety net in case a browser extension or service worker hits
       # the backend directly.
       CLIENT_URL: ${CLIENT_URL:-https://bsu-vistors.ffly.site,http://localhost,http://100.83.235.28}
     volumes:
-      - bsu-data:/app/src/database
+      - bsu-data:/app/data
       - bsu-uploads:/app/uploads
     expose:
       - "8765"   # internal only — no public port

@@ -1,6 +1,28 @@
 import Visitor from "../models/Visitor.js";
 import VisitLog from "../models/VisitLog.js";
 
+const DEFAULT_OVERDUE_MINUTES = 30;
+const MIN_OVERDUE_MINUTES = 1;
+const MAX_OVERDUE_MINUTES = 24 * 60;
+
+function parseOverdueMinutes(query) {
+  const rawValue = query.overdue_minutes ?? query.minutes;
+
+  if (rawValue === undefined || rawValue === null || rawValue === "") {
+    return DEFAULT_OVERDUE_MINUTES;
+  }
+
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_OVERDUE_MINUTES;
+  }
+
+  return Math.min(
+    MAX_OVERDUE_MINUTES,
+    Math.max(MIN_OVERDUE_MINUTES, Math.floor(parsed)),
+  );
+}
+
 class VisitorLogController {
   static register(req, res) {
     try {
@@ -67,6 +89,7 @@ class VisitorLogController {
         office_id: parsedOfficeId,
         purpose,
         logged_by: req.user?.id || null,
+        visitor_img: img || visitor.img || null,
       });
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
@@ -261,8 +284,16 @@ class VisitorLogController {
 
   static listOverdue(req, res) {
     try {
-      const rows = VisitLog.findOverdue({ limit: 100 });
-      return res.json({ overdue: rows, total: rows.length });
+      const overdueMinutes = parseOverdueMinutes(req.query);
+      const rows = VisitLog.findOverdue({
+        limit: 100,
+        overdueMinutes,
+      });
+      return res.json({
+        overdue: rows,
+        total: rows.length,
+        overdue_minutes: overdueMinutes,
+      });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }

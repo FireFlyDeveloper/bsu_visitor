@@ -58,22 +58,81 @@
             </div>
 
             <div>
-              <label class="label" for="photo">Visitor photo *</label>
-              <input
-                id="photo"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                required
-                @change="onFile"
-                class="input file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--ink)] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
-              />
-              <img
-                v-if="imgPreview"
-                :src="imgPreview"
-                alt="Photo preview"
-                class="mt-4 h-48 w-full rounded-2xl object-cover border border-[var(--line)]"
-              />
+              <label class="label">Visitor photo *</label>
+              <div class="rounded-2xl border border-[var(--line)] bg-white p-3">
+                <div
+                  v-if="cameraActive"
+                  class="overflow-hidden rounded-xl border border-[var(--line)] bg-black"
+                >
+                  <video
+                    ref="videoRef"
+                    autoplay
+                    muted
+                    playsinline
+                    class="h-64 w-full object-cover"
+                  ></video>
+                </div>
+                <img
+                  v-else-if="imgPreview"
+                  :src="imgPreview"
+                  alt="Captured visitor photo preview"
+                  class="h-64 w-full rounded-xl border border-[var(--line)] object-cover"
+                />
+                <div
+                  v-else
+                  class="flex h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--line)] bg-[var(--paper-2)] px-4 text-center"
+                >
+                  <p class="text-sm font-semibold text-[var(--ink)]">No visitor photo yet</p>
+                  <p class="mt-1 max-w-sm text-xs text-[var(--ink-3)]">
+                    Open the device camera and capture a clear photo before logging the visitor.
+                  </p>
+                </div>
+
+                <canvas ref="canvasRef" class="hidden"></canvas>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <button
+                    v-if="!cameraActive && !imgPreview"
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    :disabled="cameraStarting"
+                    @click="startCamera"
+                  >
+                    {{ cameraStarting ? "Opening camera…" : "Open camera" }}
+                  </button>
+                  <button
+                    v-if="cameraActive"
+                    type="button"
+                    class="btn btn-primary btn-sm"
+                    @click="capturePhoto"
+                  >
+                    Capture photo
+                  </button>
+                  <button
+                    v-if="cameraActive"
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    @click="stopCamera"
+                  >
+                    Close camera
+                  </button>
+                  <button
+                    v-if="imgPreview"
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    @click="retakePhoto"
+                  >
+                    Retake photo
+                  </button>
+                </div>
+
+                <p
+                  v-if="cameraError"
+                  class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                >
+                  {{ cameraError }}
+                </p>
+              </div>
             </div>
 
             <div
@@ -114,7 +173,7 @@
               >
                 <img
                   v-if="log.visitor_img"
-                  :src="`/${log.visitor_img}`"
+                  :src="visitorImageUrl(log.visitor_img)"
                   class="h-10 w-10 rounded-full object-cover"
                 />
                 <div
@@ -163,7 +222,7 @@
               >
                 <img
                   v-if="log.visitor_img"
-                  :src="`/${log.visitor_img}`"
+                  :src="visitorImageUrl(log.visitor_img)"
                   class="h-9 w-9 rounded-full object-cover"
                 />
                 <div
@@ -204,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { useOfficeStore } from "@/store/office.js";
 import { useVisitorLogStore } from "@/store/visitorLog.js";
 import { useToast } from "@/composables/useToast";
@@ -213,6 +272,8 @@ import AppButton from "@/components/AppButton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import KioskSuccessModal from "@/components/KioskSuccessModal.vue";
 import { stagger } from "@/composables/useStagger";
+import { visitorImageUrl } from "@/utils/visitorImageUrl";
+import { formatServerTime } from "@/utils/dateTime";
 
 const officeStore = useOfficeStore();
 const visitorLogStore = useVisitorLogStore();
@@ -226,6 +287,11 @@ const office_id = ref("");
 const purpose = ref("");
 const file = ref(null);
 const imgPreview = ref("");
+const videoRef = ref(null);
+const canvasRef = ref(null);
+const cameraActive = ref(false);
+const cameraStarting = ref(false);
+const cameraError = ref("");
 const loading = ref(false);
 const error = ref("");
 
@@ -250,15 +316,135 @@ async function fetchOffices() {
   offices.value = officeStore.offices;
 }
 
-function onFile(event) {
-  const selected = event.target.files?.[0];
-  if (!selected) return;
-  if (selected.size > 5 * 1024 * 1024) {
-    error.value = "Photo must be under 5MB";
+function revokePreview() {
+  if (imgPreview.value) {
+    URL.revokeObjectURL(imgPreview.value);
+  }
+  imgPreview.value = "";
+}
+
+function stopCamera() {
+  const stream = videoRef.value?.srcObject;
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+    videoRef.value.srcObject = null;
+  }
+  cameraActive.value = false;
+  cameraStarting.value = false;
+}
+
+async function startCamera() {
+  cameraError.value = "";
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    cameraError.value =
+      "This browser does not support camera capture. Use a device and browser with camera access.";
     return;
   }
-  file.value = selected;
-  imgPreview.value = URL.createObjectURL(selected);
+
+  stopCamera();
+  cameraStarting.value = true;
+
+  try {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "user" } },
+        audio: false,
+      });
+    } catch (frontCameraError) {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+    }
+
+    cameraActive.value = true;
+    await nextTick();
+
+    if (!videoRef.value) {
+      stream.getTracks().forEach((track) => track.stop());
+      cameraActive.value = false;
+      return;
+    }
+
+    videoRef.value.srcObject = stream;
+    await videoRef.value.play();
+  } catch (err) {
+    stopCamera();
+    cameraError.value = cameraErrorMessage(err);
+  } finally {
+    cameraStarting.value = false;
+  }
+}
+
+function cameraErrorMessage(err) {
+  if (err?.name === "NotAllowedError" || err?.name === "SecurityError") {
+    return "Camera permission was denied. Allow camera access in the browser and try again.";
+  }
+  if (err?.name === "NotFoundError" || err?.name === "OverconstrainedError") {
+    return "No usable camera was found on this device.";
+  }
+  if (err?.name === "NotReadableError") {
+    return "The camera is already in use by another app or browser tab.";
+  }
+  return "Unable to open the camera. Check device permissions and try again.";
+}
+
+function capturePhoto() {
+  const video = videoRef.value;
+  const canvas = canvasRef.value;
+
+  if (!video || !canvas || !cameraActive.value) {
+    cameraError.value = "Open the camera before capturing a photo.";
+    return;
+  }
+
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) {
+    cameraError.value = "Camera preview is still loading. Please try again in a moment.";
+    return;
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  context.drawImage(video, 0, 0, width, height);
+
+  canvas.toBlob(
+    (blob) => {
+      if (!blob) {
+        cameraError.value = "Failed to capture the photo. Please try again.";
+        return;
+      }
+
+      revokePreview();
+      const photoFile = new File([blob], `visitor-photo-${Date.now()}.jpg`, {
+        type: "image/jpeg",
+      });
+
+      if (photoFile.size > 5 * 1024 * 1024) {
+        cameraError.value = "Captured photo must be under 5MB. Please retake it.";
+        file.value = null;
+        stopCamera();
+        return;
+      }
+
+      file.value = photoFile;
+      imgPreview.value = URL.createObjectURL(blob);
+      cameraError.value = "";
+      stopCamera();
+    },
+    "image/jpeg",
+    0.9,
+  );
+}
+
+function retakePhoto() {
+  file.value = null;
+  revokePreview();
+  startCamera();
 }
 
 function resetForm() {
@@ -268,7 +454,8 @@ function resetForm() {
   office_id.value = "";
   purpose.value = "";
   file.value = null;
-  imgPreview.value = "";
+  revokePreview();
+  cameraError.value = "";
   error.value = "";
 }
 
@@ -282,7 +469,10 @@ async function onSubmit() {
     fd.append("address", address.value);
     fd.append("office_id", office_id.value);
     fd.append("purpose", purpose.value);
-    if (file.value) fd.append("img", file.value);
+    if (!file.value) {
+      throw new Error("Capture a visitor photo before logging the visitor");
+    }
+    fd.append("img", file.value);
 
     const result = await visitorLogStore.kioskRegister(fd);
     const office = offices.value.find(
@@ -335,10 +525,7 @@ async function onSignOut(log) {
 }
 
 function formatTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return formatServerTime(value);
 }
 
 onMounted(async () => {
@@ -349,5 +536,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (pollHandle) clearInterval(pollHandle);
+  stopCamera();
+  revokePreview();
 });
 </script>

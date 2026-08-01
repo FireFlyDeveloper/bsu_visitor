@@ -289,6 +289,7 @@ import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import { stagger } from "@/composables/useStagger";
+import { parseServerDate } from "@/utils/dateTime";
 
 const officeStore = useOfficeStore();
 const visitorLogStore = useVisitorLogStore();
@@ -302,9 +303,8 @@ onMounted(async () => {
   await officeStore.fetchOffices();
   try {
     const res = await visitorLogStore.fetchCountPerOffice();
-    const pending = (res.data || []).filter((d) => d.status === "pending");
     officeCounts.value = Object.fromEntries(
-      pending.map((d) => [d.office_id, d.total_visits]),
+      (res.data || []).map((d) => [d.office_id, d.total_visits ?? d.queue_count ?? 0]),
     );
   } catch (_) {}
   try {
@@ -312,9 +312,14 @@ onMounted(async () => {
     const data = await visitorLogStore.fetchVisitLogs({ perPage: 200 });
     const all = data.logs || [];
     todayCount.value = all.filter(
-      (v) => v.time_in && new Date(v.time_in).toDateString() === todayKey,
+      (v) => v.time_in && parseServerDate(v.time_in)?.toDateString() === todayKey,
     ).length;
-    activeCount.value = all.filter((v) => !v.time_out).length;
+    try {
+      const active = await visitorLogStore.fetchActiveVisitors();
+      activeCount.value = active.total ?? (active.data || []).length;
+    } catch (_) {
+      activeCount.value = all.filter((v) => !v.left_at && v.status !== "left").length;
+    }
   } catch (_) {}
   try {
     await userStore.fetchAllUsers();

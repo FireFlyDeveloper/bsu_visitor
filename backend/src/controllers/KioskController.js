@@ -64,6 +64,7 @@ class KioskController {
         purpose,
         logged_by: req.user?.id || null,
         status: "pending",
+        visitor_img: img,
       });
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
