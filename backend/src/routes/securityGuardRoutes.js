@@ -86,5 +86,7 @@ router.get(
     }
   },
 );
+router.get("/visitors/pending-sign-out", roleMiddleware("security"), SecurityGuardController.pendingSignOut);
+router.patch("/visitors/:visitId/overdue-acknowledgement", roleMiddleware("security"), SecurityGuardController.acknowledgeOverdue);
 
 export default router;

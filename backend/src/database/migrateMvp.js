@@ -45,3 +45,7 @@ db.prepare(`CREATE TABLE IF NOT EXISTS notification_events (
 )`).run();
 
 addColumn("visit_logs", "exit_deadline", "DATETIME");
+addColumn("visit_logs", "overdue_acknowledged_at", "DATETIME");
+addColumn("notification_events", "dedup_key", "TEXT");
+db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_events_dedup
+  ON notification_events(dedup_key) WHERE dedup_key IS NOT NULL`).run();

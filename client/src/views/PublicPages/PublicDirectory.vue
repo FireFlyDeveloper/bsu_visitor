@@ -1,0 +1,6 @@
+<template><div class="min-h-screen bg-[#fffaf8]"><Navbar /><main class="mx-auto max-w-6xl px-4 py-10 sm:px-6"><p class="eyebrow">Public directory</p><h1 class="mt-2 text-4xl font-bold">Find an Office</h1><p class="mt-3 text-[var(--bsu-ink-2)]">{{ occupancy }} visitors currently on campus. Queue data is anonymous.</p><div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><article v-for="office in offices" :key="office.id" class="surface p-6"><h2 class="text-xl font-bold">{{ office.office_name }}</h2><p class="mt-3 text-sm">{{ office.status }} · {{ office.queue_count }} in queue</p><p class="text-sm text-[var(--bsu-ink-2)]">Estimated wait: {{ office.estimated_wait_minutes }} minutes</p><router-link :to="`/register?office=${office.id}`" class="mt-5 inline-block font-semibold text-[var(--bsu-red)]">Register as visitor →</router-link></article></div></main></div></template>
+<script setup>
+import { onMounted, ref } from "vue"; import Navbar from "@/components/Navbar.vue";
+const offices = ref([]); const occupancy = ref(0); const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+onMounted(async () => { const response = await fetch(`${API_BASE}/public/directory`); const data = await response.json(); offices.value = data.offices || []; occupancy.value = data.occupancy?.active_visitors || 0; });
+</script>

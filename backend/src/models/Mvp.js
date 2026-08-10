@@ -37,9 +37,14 @@ export function setExitGraceMinutes(minutes) {
   db.prepare(`UPDATE system_settings SET setting_value = ? WHERE setting_key = 'exit_grace_minutes'`).run(String(minutes));
 }
 
-export function recordNotification(audience, officeId, eventType, payload) {
-  db.prepare(`INSERT INTO notification_events (audience, office_id, event_type, payload_json)
-    VALUES (?, ?, ?, ?)`).run(audience, officeId || null, eventType, JSON.stringify(payload));
+export function recordNotification(audience, officeId, eventType, payload, dedupKey = null) {
+  db.prepare(`INSERT INTO notification_events (audience, office_id, event_type, payload_json, dedup_key)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(dedup_key) DO NOTHING`).run(audience, officeId || null, eventType, JSON.stringify(payload), dedupKey);
+}
+
+export function isWebPushConfigured() {
+  return Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
 }
 
 export function savePushSubscription({ userId, audience, subscription }) {

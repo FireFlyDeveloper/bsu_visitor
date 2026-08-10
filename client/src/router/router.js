@@ -20,9 +20,15 @@ import ShowVisitors from "../views/VisitorPages/ShowVisitors.vue";
 import VisitorStatus from "../views/GuardPages/VisitorStatus.vue";
 import OfficeStatus from "../views/GuardPages/OfficeStatus.vue";
 import ShowQr from "../views/VisitorPages/ShowQr.vue";
+import PublicDirectory from "../views/PublicPages/PublicDirectory.vue";
+import PublicRegister from "../views/PublicPages/PublicRegister.vue";
+import PublicStatus from "../views/PublicPages/PublicStatus.vue";
 
 const routes = [
   { path: "/", name: "Home", component: HomePage },
+  { path: "/directory", name: "PublicDirectory", component: PublicDirectory, meta: { requiresAuth: false } },
+  { path: "/register", name: "PublicRegister", component: PublicRegister, meta: { requiresAuth: false } },
+  { path: "/status", name: "PublicStatus", component: PublicStatus, meta: { requiresAuth: false } },
   {
     // Public per-office fixed-QR landing page.
     // Visitors scan the QR stuck on the office door → land here

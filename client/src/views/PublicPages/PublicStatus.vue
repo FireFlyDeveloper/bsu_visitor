@@ -1,0 +1,7 @@
+<template><div class="min-h-screen bg-[#fffaf8]"><Navbar /><main class="mx-auto max-w-xl px-4 py-10"><p class="eyebrow">Visitor access</p><h1 class="mt-2 text-4xl font-bold">Check Visitor Status</h1><form class="surface mt-8 flex gap-3 p-6" @submit.prevent="load"><input v-model="token" class="form-input" placeholder="Paste your status token" required><button class="rounded-xl bg-[var(--bsu-red)] px-4 font-bold text-white">Check</button></form><div v-if="visit" class="surface mt-5 p-6"><p class="text-sm text-[var(--bsu-ink-2)]">{{ visit.office }}</p><h2 class="mt-2 text-3xl font-bold capitalize">{{ visit.status }}</h2><p class="mt-3 text-sm">{{ visit.overdue ? "Please proceed to security for assistance." : "Keep this page available for updates." }}</p></div><p v-if="error" class="mt-4 text-sm text-red-700">{{ error }}</p></main></div></template>
+<script setup>
+import { ref } from "vue"; import { useRoute } from "vue-router"; import Navbar from "@/components/Navbar.vue";
+const route = useRoute(); const token = ref(route.query.token || ""); const visit = ref(null); const error = ref(""); const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+async function load() { error.value = ""; const response = await fetch(`${API_BASE}/public/status/${encodeURIComponent(token.value)}`); const data = await response.json(); if (!response.ok) { error.value = data.error || "Status unavailable"; visit.value = null; return; } visit.value = data.visit; }
+if (token.value) load();
+</script>

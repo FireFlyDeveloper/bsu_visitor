@@ -1,5 +1,5 @@
 import db from "../database/database.js";
-import { createAccessToken, findVisitByAccessToken, getExitGraceMinutes, savePushSubscription, setExitGraceMinutes } from "../models/Mvp.js";
+import { createAccessToken, findVisitByAccessToken, getExitGraceMinutes, isWebPushConfigured, savePushSubscription, setExitGraceMinutes } from "../models/Mvp.js";
 
 export default class MvpController {
   static accessStatus(req, res) {
@@ -9,7 +9,7 @@ export default class MvpController {
   }
 
   static settings(req, res) {
-    if (req.method === "GET") return res.json({ exit_grace_minutes: getExitGraceMinutes(), push: { configured: false, reason: "Web Push VAPID delivery is not configured on this deployment" } });
+    if (req.method === "GET") return res.json({ exit_grace_minutes: getExitGraceMinutes(), push: { configured: isWebPushConfigured(), reason: isWebPushConfigured() ? null : "Web Push VAPID delivery is not configured on this deployment" } });
     const minutes = Number(req.body?.exit_grace_minutes);
     if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) return res.status(400).json({ error: "exit_grace_minutes must be an integer from 1 to 1440" });
     setExitGraceMinutes(minutes);
@@ -20,13 +20,13 @@ export default class MvpController {
     try {
       const audience = ["office", "security"].includes(req.body?.audience) ? req.body.audience : "security";
       savePushSubscription({ userId: req.user.id, audience, subscription: req.body?.subscription });
-      return res.status(201).json({ ok: true, delivery: "not_configured", message: "Subscription saved; Web Push delivery requires server VAPID configuration" });
+      return res.status(201).json({ ok: true, delivery: isWebPushConfigured() ? "configured" : "not_configured", message: isWebPushConfigured() ? "Subscription saved for configured delivery" : "Subscription saved; in-app updates remain available until VAPID is configured" });
     } catch (error) { return res.status(400).json({ error: error.message }); }
   }
 
   static events(req, res) {
     const rows = db.prepare(`SELECT id, audience, office_id, event_type, payload_json, created_at FROM notification_events WHERE (audience = 'security' OR (audience = 'office' AND office_id = (SELECT office_id FROM users WHERE id = ?))) ORDER BY id DESC LIMIT 50`).all(req.user.id);
-    return res.json({ configured: false, events: rows.map((row) => ({ ...row, payload: JSON.parse(row.payload_json) })) });
+    return res.json({ configured: isWebPushConfigured(), events: rows.map((row) => ({ ...row, payload: JSON.parse(row.payload_json) })) });
   }
 
   static issueToken(visitLogId) { return createAccessToken(visitLogId); }

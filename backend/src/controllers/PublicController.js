@@ -1,7 +1,7 @@
 import db from "../database/database.js";
 import VisitLog from "../models/VisitLog.js";
 import Visitor from "../models/Visitor.js";
-import { getOrCreateAccessToken, recordNotification } from "../models/Mvp.js";
+import { findVisitByAccessToken, getOrCreateAccessToken, recordNotification } from "../models/Mvp.js";
 
 /**
  * Public (no-auth) visitor self-registration endpoint.
@@ -37,15 +37,43 @@ class PublicController {
     try {
       const rows = db
         .prepare(
-          `SELECT id, office_name, status, type
-           FROM offices
+           `SELECT id, office_name, status, type,
+              (SELECT COUNT(*) FROM visit_logs q WHERE q.office_id = offices.id AND q.status IN ('pending', 'processing') AND q.left_at IS NULL) AS queue_count,
+              (SELECT COUNT(*) FROM visit_logs a WHERE a.office_id = offices.id AND a.status = 'completed' AND a.left_at IS NULL) AS active_count
+            FROM offices
            ORDER BY office_name`,
         )
         .all();
-      return res.json({ offices: rows });
+      return res.json({ offices: rows.map((row) => ({ ...row, estimated_wait_minutes: Number(row.queue_count) * 15 })) });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
+  }
+
+  static directory(req, res) {
+    try {
+      const offices = db.prepare(`SELECT id, office_name, status, type,
+        (SELECT COUNT(*) FROM visit_logs q WHERE q.office_id = offices.id AND q.status IN ('pending', 'processing') AND q.left_at IS NULL) AS queue_count,
+        (SELECT COUNT(*) FROM visit_logs a WHERE a.office_id = offices.id AND a.status = 'completed' AND a.left_at IS NULL) AS active_count
+        FROM offices ORDER BY office_name`).all();
+      const occupancy = db.prepare(`SELECT COUNT(*) AS total FROM visit_logs WHERE status = 'completed' AND left_at IS NULL`).get().total;
+      return res.json({ occupancy: { active_visitors: occupancy }, offices: offices.map((office) => ({ ...office, estimated_wait_minutes: Number(office.queue_count) * 15 })) });
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+
+  static status(req, res) {
+    const token = String(req.params.token || "").trim();
+    if (!token) return res.status(400).json({ error: "status token is required" });
+    const visit = findVisitByAccessToken(token);
+    if (!visit || visit.revoked_at || new Date(visit.expires_at) <= new Date()) return res.status(404).json({ error: "Access link is invalid or expired" });
+    return res.json({ visit: { id: visit.id, office: visit.office_name, status: visit.status, time_in: visit.time_in, time_out: visit.time_out, left_at: visit.left_at, exit_deadline: visit.exit_deadline, overdue: Boolean(visit.exit_deadline && new Date(visit.exit_deadline) <= new Date() && !visit.left_at) } });
+  }
+
+  static registerGeneral(req, res) {
+    const officeId = Number(req.body?.office_id);
+    if (!Number.isFinite(officeId)) return res.status(400).json({ error: "office_id is required" });
+    req.params.id = String(officeId);
+    return PublicController.register(req, res);
   }
 
   // POST /api/public/office/:id/register
