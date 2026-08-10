@@ -10,6 +10,7 @@
 #
 # Override the port with PORT=8000 npm run test:api
 set -u
+export JWT_SECRET="${JWT_SECRET:-smoke-test-secret-with-at-least-32-characters}"
 BASE="http://localhost:${PORT:-8765}"
 JAR=/tmp/bsu-admin.jar
 SECJAR=/tmp/bsu-sec.jar
@@ -29,7 +30,7 @@ T() {
     if [[ "$data" == @* ]]; then
       local rest="${data#@}"
       if [[ "$rest" == *NONIMAGE* ]]; then
-        args+=(-F "img=@/root/tmp/bsu_visitor/README.md")
+        args+=(-F "img=@$(pwd)/README.md")
         rest="${rest%&NONIMAGE*}"
       else
         args+=(-F "img=@/tmp/tiny.png")
@@ -64,7 +65,7 @@ sleep 1
 node "$(dirname "$0")/seed-fresh.mjs" || { echo "FATAL: seed-fresh failed"; exit 1; }
 
 echo "[smoke] starting backend on :${PORT:-8765}..."
-( cd "$(dirname "$0")/../backend" && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+( cd "$(dirname "$0")/../backend" && PORT="${PORT:-8765}" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1
   curl -s -o /dev/null --max-time 1 http://localhost:${PORT:-8765}/api/health && break
@@ -83,6 +84,8 @@ echo "=== Phase 1: Public + auth ==="
 T "health" 200 GET /api/health "" ""
 T "admin login" 200 POST /api/users/login '{"username":"admin","password":"admin123"}' "$JAR"
 T "me (admin)" 200 GET /api/users/me "" "$JAR"
+T "public offices" 200 GET /api/public/offices "" ""
+T "admin grace settings" 200 GET /api/mvp/settings "" "$JAR"
 
 echo
 echo "=== Phase 2: Admin writes ==="
@@ -91,6 +94,10 @@ T "create staff1" 201 POST /api/users '{"fullname":"Test Staff","username":"staf
 T "create visitor" 201 POST /api/visitors '{"fullname":"Juan","contact_number":"0917","address":"Batangas"}' "$JAR"
 VID=$(jget /tmp/_body '["visitorId"]')
 echo "Visitor ID = $VID"
+T "public self-registration" 201 POST /api/public/office/1/register '{"fullname":"Public Juan","contact_number":"09170000001","address":"Batangas","purpose":"Inquiry"}' ""
+TOKEN=$(jget /tmp/_body '["access_token"]')
+T "public token lookup" 200 GET "/api/mvp/visits/$TOKEN" "" ""
+T "public registration idempotency" 200 POST /api/public/office/1/register '{"fullname":"Public Juan","contact_number":"09170000001","address":"Batangas","purpose":"Inquiry"}' ""
 
 echo
 echo "=== Phase 3: Visit lifecycle (with image) ==="
@@ -110,6 +117,7 @@ echo "=== Phase 6: Role enforcement ==="
 T "sec1 login" 200 POST /api/users/login '{"username":"sec1","password":"secret123"}' "$SECJAR"
 T "sec1 -> security/visitors/active (allowed)" 200 GET /api/security-guard/visitors/active "" "$SECJAR"
 T "sec1 -> office status (allowed)" 200 PATCH /api/security-guard/office/1/status '{"status":"closed"}' "$SECJAR"
+T "security push subscription abstraction" 201 POST /api/mvp/push-subscriptions '{"audience":"security","subscription":{"endpoint":"https://push.example.test/smoke","keys":{"p256dh":"x","auth":"y"}}}' "$SECJAR"
 T "sec1 -> list users (forbidden)" 403 GET /api/users "" "$SECJAR"
 T "sec1 -> create user (forbidden)" 403 POST /api/users '{"fullname":"X","username":"y","password":"secret123","role_id":2}' "$SECJAR"
 T "staff login" 200 POST /api/users/login '{"username":"staff1","password":"secret123"}' "$STJAR"
@@ -117,7 +125,7 @@ T "staff -> list users (forbidden)" 403 GET /api/users "" "$STJAR"
 T "staff -> create user (forbidden)" 403 POST /api/users '{"fullname":"X","username":"newone","password":"secret123","role_id":2}' "$STJAR"
 T "staff -> security route (forbidden)" 403 GET /api/security-guard/visitors/active "" "$STJAR"
 T "staff -> offices (allowed)" 200 GET /api/offices "" "$STJAR"
-T "staff -> visit-logs (allowed)" 200 GET /api/visit-logs "" "$STJAR"
+T "staff -> all visit-logs (forbidden)" 403 GET /api/visit-logs "" "$STJAR"
 
 echo
 echo "=== Phase 7: Kiosk + office done + guard sign-out + overdue ==="
@@ -140,8 +148,8 @@ T "non-sec kiosk (forbidden)" 403 POST /api/security-guard/kiosk/register '{"ful
 echo "[smoke] back-dating visit 1 to trigger overdue (30-min window)..."
 pkill -f "node src/server.js" 2>/dev/null
 sleep 1
-sqlite3 backend/src/database/database.db "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=1;" 2>/dev/null || true
-( cd backend && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+( cd backend && node --input-type=module -e "import Database from 'better-sqlite3'; const db = new Database('./src/database/database.db'); db.prepare(\"UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=1\").run(); db.close();" )
+( cd backend && PORT="${PORT:-8765}" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1
   curl -s -o /dev/null --max-time 1 "http://localhost:${PORT:-8765}/api/health" && break

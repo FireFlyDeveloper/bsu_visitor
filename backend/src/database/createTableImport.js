@@ -6,3 +6,4 @@ import "./createActivityLogTable.js";
 import "./createVisitorLogTable.js";
 import "./migrateLeftAt.js";
 import "./migrateVisitLogVisitorImg.js";
+import "./migrateMvp.js";

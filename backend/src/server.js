@@ -16,17 +16,26 @@ import securityGuardRoutes from "./routes/securityGuardRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import publicHomeRoutes from "./routes/publicHomeRoutes.js";
 import multisetRoutes from "./routes/multisetRoutes.js";
+import mvpRoutes from "./routes/mvpRoutes.js";
+import { authMiddleware } from "./middleware/authMiddleware.js";
+import { roleMiddleware } from "./middleware/roleMiddleware.js";
+import { serveVisitorImage } from "./controllers/VisitorImageController.js";
 
 const app = express();
 
 // Middleware
 app.use(helmet());
 
-// CORS — comma-separated allowlist via CLIENT_URL.
-// Examples:
-//   CLIENT_URL=http://localhost:3000
-//   CLIENT_URL=http://localhost:3000,https://my-tunnel.ngrok-free.app
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
+// CORS — comma-separated allowlist via CLIENT_URL. In development, support
+// the Vite localhost and LAN origins used for phone testing by default.
+// CLIENT_URL remains authoritative when explicitly configured, including in production.
+const defaultDevelopmentOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://192.168.8.41:5173",
+];
+const allowedOrigins = (process.env.CLIENT_URL ||
+  (process.env.NODE_ENV === "production" ? "" : defaultDevelopmentOrigins.join(",")))
   .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
@@ -42,12 +51,12 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: false, parameterLimit: 100, limit: "100kb" }));
 app.use(cookieParser());
 
 // Routes
-app.use("/uploads", express.static("uploads"));
+app.get("/api/visitor-images/:filename", authMiddleware, roleMiddleware(["admin", "staff", "security"]), serveVisitorImage);
 app.use("/api/users", authRoutes);
 app.use("/api/visit-logs", visitorLogRoutes);
 app.use("/api/visitors", visitorRoutes);
@@ -57,6 +66,7 @@ app.use("/api/security-guard", securityGuardRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/public-home", publicHomeRoutes);
 app.use("/api/multiset", multisetRoutes);
+app.use("/api/mvp", mvpRoutes);
 app.use("/api/roles", roleRoutes);
 // Health check
 app.get("/api/health", (req, res) => {
@@ -68,7 +78,7 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
 
   // multer error from fileFilter (e.g. wrong mime type)
-  if (err && err.message === "Only images are allowed") {
+  if (err && (err.message === "Only images are allowed" || err.message.includes("images are allowed") || err.code === "LIMIT_FILE_SIZE")) {
     return res.status(400).json({ message: err.message });
   }
 

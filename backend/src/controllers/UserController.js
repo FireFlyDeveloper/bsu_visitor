@@ -1,12 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "sample_secret_key";
-const JWT_EXPIRY = process.env.JWT_EXPIRY || "24h";
-
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is missing");
-}
+import { JWT_SECRET, JWT_EXPIRY } from "../config/auth.js";
 
 class UserController {
   static requiresOffice(roleId) {
@@ -243,6 +237,9 @@ class UserController {
         res.status(400).json({ error: "Unable to update user" });
       }
     } catch (error) {
+      if (error.code === "SQLITE_CONSTRAINT_UNIQUE" || /UNIQUE constraint failed: users\.username/.test(error.message)) {
+        return res.status(409).json({ error: "Username already exists" });
+      }
       res.status(500).json({ error: error.message });
     }
   }
@@ -254,6 +251,13 @@ class UserController {
       const user = User.findById(id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
+      }
+
+      if (Number(req.user.id) === Number(id)) {
+        return res.status(400).json({ error: "You cannot delete your own account" });
+      }
+      if (Number(user.role_id) === 1 && User.countAdmins() <= 1) {
+        return res.status(409).json({ error: "The last administrator cannot be deleted" });
       }
 
       const success = User.delete(id);

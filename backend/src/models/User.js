@@ -149,6 +149,10 @@ class User {
     return result.changes > 0;
   }
 
+  static countAdmins() {
+    return db.prepare("SELECT COUNT(*) AS count FROM users WHERE role_id = 1").get().count;
+  }
+
   static verifyPassword(password, hashedPassword) {
     return bcrypt.compareSync(password, hashedPassword);
   }

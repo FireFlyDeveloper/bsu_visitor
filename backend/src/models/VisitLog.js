@@ -1,4 +1,5 @@
 import db from "../database/database.js";
+import { getExitGraceMinutes } from "./Mvp.js";
 
 class VisitLog {
   static create(logData) {
@@ -89,7 +90,6 @@ class VisitLog {
       l.*,
       v.fullname AS visitor_name,
       v.contact_number,
-      v.address AS visitor_address,
       COALESCE(l.visitor_img, v.img) AS visitor_img,
       o.office_name
     FROM visit_logs l
@@ -132,7 +132,7 @@ class VisitLog {
     const stmt = db.prepare(`
       SELECT *
       FROM visit_logs
-      WHERE left_at IS NULL
+      WHERE status = 'completed' AND left_at IS NULL
       ORDER BY time_in DESC
     `);
     return stmt.all();
@@ -200,7 +200,6 @@ class VisitLog {
       l.*,
       v.fullname AS visitor_name,
       v.contact_number,
-      v.address AS visitor_address,
       COALESCE(l.visitor_img, v.img) AS visitor_img,
       o.office_name
     FROM visit_logs l
@@ -231,11 +230,12 @@ class VisitLog {
   static markDone(id) {
     const stmt = db.prepare(`
       UPDATE visit_logs
-      SET status = 'completed',
-          time_out = COALESCE(time_out, CURRENT_TIMESTAMP)
+       SET status = 'completed',
+           time_out = COALESCE(time_out, CURRENT_TIMESTAMP),
+           exit_deadline = COALESCE(exit_deadline, datetime('now', '+' || ? || ' minutes'))
       WHERE id = ? AND status != 'completed'
     `);
-    const result = stmt.run(id);
+    const result = stmt.run(getExitGraceMinutes(), id);
     return result.changes > 0;
   }
 
@@ -310,7 +310,6 @@ class VisitLog {
         l.*,
         v.fullname AS visitor_name,
         v.contact_number,
-        v.address AS visitor_address,
         COALESCE(l.visitor_img, v.img) AS visitor_img,
         o.office_name
       FROM visit_logs l

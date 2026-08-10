@@ -1,6 +1,7 @@
 import db from "../database/database.js";
 import VisitLog from "../models/VisitLog.js";
 import Visitor from "../models/Visitor.js";
+import { getOrCreateAccessToken, recordNotification } from "../models/Mvp.js";
 
 /**
  * Public (no-auth) visitor self-registration endpoint.
@@ -64,44 +65,54 @@ class PublicController {
         return res.status(404).json({ error: "Office not found" });
       }
 
-      const { fullname, contact_number, address, purpose } = req.body || {};
-      if (!fullname || !contact_number || !address) {
-        return res.status(400).json({
-          error: "fullname, contact_number, and address are required",
-        });
-      }
+      const { fullname, contact_number, address, purpose = "" } = req.body || {};
+      const normalizedContact = contact_number.trim();
 
       // Reuse the visitor by contact_number if they exist.
-      let visitor = Visitor.findByContactNumber(contact_number);
+      let visitor = Visitor.findByContactNumber(normalizedContact);
       if (!visitor) {
         const newId = Visitor.create({
           fullname,
-          contact_number,
-          address,
+          contact_number: normalizedContact,
+          address: address.trim(),
           id_type: "",
           img: null,
         });
         visitor = Visitor.findById(newId);
       }
 
+      const pending = db.prepare(`
+        SELECT id FROM visit_logs
+        WHERE visitor_id = ? AND office_id = ? AND status IN ('pending', 'processing') AND left_at IS NULL
+        LIMIT 1
+      `).get(visitor.id, id);
+      if (pending) {
+        const access = getOrCreateAccessToken(pending.id);
+        return res.status(200).json({ ok: true, idempotent: true, logId: pending.id, access_token: access.token, access_expires_at: access.expires_at, office: { id: office.id, office_name: office.office_name } });
+      }
+
       const logId = VisitLog.create({
         visitor_id: visitor.id,
         office_id: id,
-        purpose: purpose || "",
+        purpose: purpose.trim(),
         logged_by: null,
         status: "pending",
       });
+      recordNotification("office", id, "visitor_registered", { visit_id: logId });
+      recordNotification("security", id, "visitor_registered", { visit_id: logId });
 
       // Build an absolute URL for the visitor's photo (if any) so the
       // client can <img src=...> it on the success screen.
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
       const visitorImg = visitor.img
-        ? `${baseUrl}/${visitor.img}`
+        ? `${req.protocol}://${req.get("host")}/api/visitor-images/${visitor.img.split("/").pop()}`
         : null;
 
+      const access = getOrCreateAccessToken(logId);
       return res.status(201).json({
         ok: true,
         logId,
+        access_token: access.token,
+        access_expires_at: access.expires_at,
         office: { id: office.id, office_name: office.office_name },
         visitor: {
           id: visitor.id,
@@ -111,7 +122,7 @@ class PublicController {
       });
     } catch (err) {
       console.error("public register error:", err);
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: "Unable to register visitor" });
     }
   }
 }

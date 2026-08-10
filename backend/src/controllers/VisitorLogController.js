@@ -92,10 +92,8 @@ class VisitorLogController {
         visitor_img: img || visitor.img || null,
       });
 
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
-
       if (visitor.img) {
-        visitor.img = `${baseUrl}/${visitor.img}`;
+        visitor.img = `${req.protocol}://${req.get("host")}/api/visitor-images/${visitor.img.split("/").pop()}`;
       }
 
       return res.status(201).json({
@@ -173,15 +171,14 @@ class VisitorLogController {
 
       // Convert the visitor's relative `img` path into an absolute URL
       // so the client can <img src=...> it without further wiring.
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
       for (const row of rows) {
         if (row.visitor_img) {
-          row.visitor_img = `${baseUrl}/${row.visitor_img}`;
+          row.visitor_img = `${req.protocol}://${req.get("host")}/api/visitor-images/${row.visitor_img.split("/").pop()}`;
         }
       }
 
       return res.json({
-        logs: rows,
+        logs: rows.map(({ visitor_address, ...row }) => row),
         total,
         page: pageNumber,
         per_page: perPage,

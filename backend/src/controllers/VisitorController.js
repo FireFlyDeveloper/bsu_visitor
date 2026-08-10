@@ -1,6 +1,10 @@
 import Visitor from "../models/Visitor.js";
 
 class VisitorController {
+  static project(visitor) {
+    if (!visitor) return visitor;
+    return { id: visitor.id, fullname: visitor.fullname, img: visitor.img || null };
+  }
   static create(req, res) {
     try {
       const { fullname, contact_number, address, id_type } = req.body;
@@ -15,7 +19,7 @@ class VisitorController {
       // Fall back to req.body.img for JSON clients that send a URL/path.
       const img = req.file
         ? `uploads/${req.file.filename}`
-        : (req.body.img ?? null);
+         : null;
 
       const visitorId = Visitor.create({
         fullname,
@@ -52,7 +56,7 @@ class VisitorController {
         });
       }
 
-      res.json(visitors);
+       res.json(visitors.map(VisitorController.project));
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -67,7 +71,7 @@ class VisitorController {
         return res.status(404).json({ error: "Visitor not found" });
       }
 
-      res.json(visitor);
+       res.json(VisitorController.project(visitor));
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

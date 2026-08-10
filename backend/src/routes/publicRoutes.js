@@ -1,5 +1,6 @@
 import { Router } from "express";
 import PublicController from "../controllers/PublicController.js";
+import { publicRegistrationGuard, validatePublicRegistration } from "../middleware/publicRegistration.js";
 
 const router = Router();
 
@@ -8,6 +9,6 @@ const router = Router();
 // from their phone — no login, no photo required.
 router.get("/offices", PublicController.listOffices);
 router.get("/office/:id", PublicController.getOffice);
-router.post("/office/:id/register", PublicController.register);
+router.post("/office/:id/register", publicRegistrationGuard, validatePublicRegistration, PublicController.register);
 
 export default router;

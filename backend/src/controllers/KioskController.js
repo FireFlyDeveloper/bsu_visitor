@@ -1,5 +1,7 @@
 import Visitor from "../models/Visitor.js";
 import VisitLog from "../models/VisitLog.js";
+import MvpController from "./MvpController.js";
+import { recordNotification } from "../models/Mvp.js";
 
 class KioskController {
   static register(req, res) {
@@ -66,6 +68,8 @@ class KioskController {
         status: "pending",
         visitor_img: img,
       });
+      recordNotification("office", parsedOfficeId, "visitor_registered", { visit_id: logId });
+      recordNotification("security", parsedOfficeId, "visitor_registered", { visit_id: logId });
 
       const baseUrl = `${req.protocol}://${req.get("host")}`;
 
@@ -77,6 +81,7 @@ class KioskController {
         visitor,
         logId,
         office_id: parsedOfficeId,
+        access_token: MvpController.issueToken(logId).token,
       });
     } catch (error) {
       console.error("kiosk register error:", error);

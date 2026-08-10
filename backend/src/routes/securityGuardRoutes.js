@@ -9,6 +9,7 @@ import upload from "../middleware/upload.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import { roleMiddleware } from "../middleware/roleMiddleware.js";
 import { activityLogger } from "../middleware/activityLogger.js";
+import { persistImage } from "../middleware/upload.js";
 
 const router = express.Router();
 
@@ -28,6 +29,7 @@ router.post(
   "/kiosk/register",
   roleMiddleware("security"),
   upload.single("img"),
+  persistImage,
   KioskController.register,
 );
 
@@ -47,7 +49,7 @@ router.patch(
 
 /**
  * GET /security-guard/visitors/active
- * Returns the list of visitors still inside the campus (time_out IS NULL).
+ * Returns visitors whose visit is completed but who have not signed out.
  */
 router.get(
   "/visitors/active",
@@ -65,7 +67,9 @@ router.get(
           visitor_id: log.visitor_id,
           visitor_name: visitor.fullname || null,
           contact_number: visitor.contact_number || null,
-          visitor_img: absoluteUrl(req, log.visitor_img || visitor.img || null),
+          visitor_img: (log.visitor_img || visitor.img)
+            ? `${req.protocol}://${req.get("host")}/api/visitor-images/${(log.visitor_img || visitor.img).split("/").pop()}`
+            : null,
           office_id: log.office_id,
           office_name: office?.office_name || null,
           purpose: log.purpose,
