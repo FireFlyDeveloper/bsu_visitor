@@ -8,10 +8,15 @@
 # Usage:  npm run test:api        (from project root)
 #         bash scripts/smoke-test.sh
 #
-# Override the port with PORT=8000 npm run test:api
+# PORT takes precedence. When unset, use 8000 or the next available port.
 set -u
 export JWT_SECRET="${JWT_SECRET:-smoke-test-secret-with-at-least-32-characters}"
-BASE="http://localhost:${PORT:-8765}"
+if [[ -n "${PORT+x}" ]]; then
+  BACKEND_PORT="$PORT"
+else
+  BACKEND_PORT=$(node "$(dirname "$0")/select-port.mjs" 8000)
+fi
+BASE="http://localhost:$BACKEND_PORT"
 JAR=/tmp/bsu-admin.jar
 SECJAR=/tmp/bsu-sec.jar
 STJAR=/tmp/bsu-staff.jar
@@ -57,18 +62,17 @@ T() {
 jget() { python3 -c "import json; d=json.load(open('$1')); print(d$2)"; }
 
 echo "=== Phase 0: Re-seed DB for idempotency ==="
-# Tests below create sec1/staff1/visitors; second run must start clean.
-# We must stop the running backend first so it releases the SQLite file handle.
-echo "[smoke] stopping any running backend on :${PORT:-8765}..."
-pkill -f "node src/server.js" 2>/dev/null
-sleep 1
+# Tests below create smoke-specific users and visitors; seeded sec1/staff1 are
+# used for role coverage so the test does not collide with deterministic seed data.
+# The smoke test owns the backend process it starts and never stops unrelated processes.
+echo "[smoke] using backend port :$BACKEND_PORT"
 node "$(dirname "$0")/seed-fresh.mjs" || { echo "FATAL: seed-fresh failed"; exit 1; }
 
-echo "[smoke] starting backend on :${PORT:-8765}..."
-( cd "$(dirname "$0")/../backend" && PORT="${PORT:-8765}" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+echo "[smoke] starting backend on :$BACKEND_PORT..."
+( cd "$(dirname "$0")/../backend" && PORT="$BACKEND_PORT" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1
-  curl -s -o /dev/null --max-time 1 http://localhost:${PORT:-8765}/api/health && break
+  curl -s -o /dev/null --max-time 1 "http://localhost:$BACKEND_PORT/api/health" && break
   [[ $i -eq 10 ]] && { echo "FATAL: backend did not start"; cat /tmp/bsu_backend_smoke.log; exit 1; }
 done
 echo "[smoke] backend ready (pid $(cat /tmp/bsu_backend_smoke.pid))"
@@ -89,8 +93,8 @@ T "admin grace settings" 200 GET /api/mvp/settings "" "$JAR"
 
 echo
 echo "=== Phase 2: Admin writes ==="
-T "create sec1" 201 POST /api/users '{"fullname":"Test Sec","username":"sec1","password":"secret123","role_id":2}' "$JAR"
-T "create staff1" 201 POST /api/users '{"fullname":"Test Staff","username":"staff1","password":"secret123","role_id":3,"office_id":1}' "$JAR"
+T "create smoke security user" 201 POST /api/users '{"fullname":"Test Sec","username":"smoke-sec","password":"secret123","role_id":2}' "$JAR"
+T "create smoke staff user" 201 POST /api/users '{"fullname":"Test Staff","username":"smoke-staff","password":"secret123","role_id":3,"office_id":1}' "$JAR"
 T "create visitor" 201 POST /api/visitors '{"fullname":"Juan","contact_number":"0917","address":"Batangas"}' "$JAR"
 VID=$(jget /tmp/_body '["visitorId"]')
 echo "Visitor ID = $VID"
@@ -107,7 +111,7 @@ T "complete visit" 200 PATCH "/api/visitor-status/1/status" '{"status":"complete
 
 echo
 echo "=== Phase 5: Negative validations ==="
-T "duplicate username" 409 POST /api/users '{"fullname":"X","username":"sec1","password":"secret123","role_id":2}' "$JAR"
+T "duplicate username" 409 POST /api/users '{"fullname":"X","username":"smoke-sec","password":"secret123","role_id":2}' "$JAR"
 T "short password" 400 POST /api/users '{"fullname":"X","username":"tiny","password":"abc","role_id":2}' "$JAR"
 T "staff w/o office" 400 POST /api/users '{"fullname":"X","username":"nooff","password":"secret123","role_id":3}' "$JAR"
 T "non-image upload -> 400" 400 POST /api/visit-logs/register "@visitor_id=$VID&office_id=1&purpose=x&NONIMAGE" "$JAR"
@@ -146,13 +150,13 @@ T "non-sec kiosk (forbidden)" 403 POST /api/security-guard/kiosk/register '{"ful
 # NOTE: the overdue query enforces a 30-min window, so a freshly-completed
 # visit won't appear. Stop the backend, back-date the row, restart, then check.
 echo "[smoke] back-dating visit 1 to trigger overdue (30-min window)..."
-pkill -f "node src/server.js" 2>/dev/null
+kill "$(cat /tmp/bsu_backend_smoke.pid)" 2>/dev/null
 sleep 1
 ( cd backend && node --input-type=module -e "import Database from 'better-sqlite3'; const db = new Database('./src/database/database.db'); db.prepare(\"UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=1\").run(); db.close();" )
-( cd backend && PORT="${PORT:-8765}" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+( cd backend && PORT="$BACKEND_PORT" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1
-  curl -s -o /dev/null --max-time 1 "http://localhost:${PORT:-8765}/api/health" && break
+  curl -s -o /dev/null --max-time 1 "http://localhost:$BACKEND_PORT/api/health" && break
 done
 T "overdue list contains visit 1" 200 GET /api/visit-logs/overdue '' "$SECJAR"
 # Verify the JSON has at least 1 entry

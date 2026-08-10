@@ -26,15 +26,17 @@ const app = express();
 // Middleware
 app.use(helmet());
 
-// CORS — comma-separated allowlist via CLIENT_URL. In development, support
-// the Vite localhost and LAN origins used for phone testing by default.
-// CLIENT_URL remains authoritative when explicitly configured, including in production.
+// CORS — CLIENT_URL is an explicit, comma-separated allowlist and remains
+// authoritative in every environment. Development also supports standalone
+// Vite runs through VITE_PORT; production has no implicit origins.
+const configuredClientUrl = process.env.CLIENT_URL?.trim();
+const vitePort = Number(process.env.VITE_PORT || 5173);
 const defaultDevelopmentOrigins = [
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://192.168.8.41:5173",
+  `http://localhost:${vitePort}`,
+  `http://127.0.0.1:${vitePort}`,
+  `http://192.168.8.41:${vitePort}`,
 ];
-const allowedOrigins = (process.env.CLIENT_URL ||
+const allowedOrigins = (configuredClientUrl ||
   (process.env.NODE_ENV === "production" ? "" : defaultDevelopmentOrigins.join(",")))
   .split(",")
   .map((o) => o.trim())

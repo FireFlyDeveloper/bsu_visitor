@@ -79,8 +79,12 @@ npm run seed             # wipes backend/src/database/database.db + reseeds
 
 ### 4. Run dev
 ```bash
-npm run dev              # starts backend :8000 and frontend :5173 concurrently
+ npm run dev              # selects backend :8000 or the next available port, then starts frontend :5173
 ```
+
+When `PORT` is set, it remains authoritative. Otherwise, `npm run dev` selects
+the first available port starting at 8000 and uses that same port for the Vite
+API proxy.
 
 Default login: **admin / admin123** — change it immediately.
 
@@ -193,7 +197,7 @@ bsu_visitor/
 | Key | Default | Notes |
 |-----|---------|-------|
 | `VITE_API_BASE` | `/api` | Sent on every fetch. Use full URL in production. |
-| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Vite dev proxy target |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Vite dev proxy target; `npm run dev` sets it to the selected backend port |
 | `VITE_ALLOWED_HOSTS` | `localhost` | Comma-separated dev-server allowed hosts (for ngrok etc.) |
 
 ---

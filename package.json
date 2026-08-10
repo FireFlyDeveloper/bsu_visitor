@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "backend": "cd backend && npm run dev",
+    "backend": "cd backend && PORT=\"${PORT:-$(node ../scripts/select-port.mjs 8000)}\" npm run dev",
     "frontend": "cd client && npm run dev",
-    "dev": "concurrently npm:backend npm:frontend",
+    "dev": "PORT=\"${PORT:-$(node scripts/select-port.mjs 8000)}\"; VITE_PORT=\"${VITE_PORT:-$(node scripts/select-port.mjs 5173)}\"; CLIENT_URL=\"${CLIENT_URL:-http://127.0.0.1:$VITE_PORT}\"; export PORT VITE_PORT CLIENT_URL VITE_API_PROXY_TARGET=\"http://127.0.0.1:$PORT\"; concurrently npm:backend npm:frontend",
+    "backend:port": "node scripts/select-port.mjs 8000",
     "seed": "node scripts/seed-fresh.mjs --root",
     "test:api": "bash scripts/smoke-test.sh"
   },

@@ -160,7 +160,12 @@ async function onSubmit() {
       username: username.value,
       password: password.value,
     });
-    router.push("/");
+    const destinations = {
+      1: { name: "AdminDashboard" },
+      2: { name: "SecurityVisitorStatus" },
+      3: { name: "StaffDashboard" },
+    };
+    await router.push(destinations[userStore.currentUser.role_id] || { name: "Home" });
   } catch (err) {
     error.value =
       err?.message || "Unable to sign in. Please check your credentials.";
