@@ -86,18 +86,6 @@ const routes = [
     ],
   },
   {
-    path: "/qr-code",
-    component: AdminLayout,
-    children: [
-      {
-        path: "",
-        name: "QRCode",
-        component: ShowQr,
-        meta: { requiresAuth: true },
-      },
-    ],
-  },
-  {
     path: "/unauthorized",
     name: "Unauthorized",
     component: UnauthorizePage,

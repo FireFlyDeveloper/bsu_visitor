@@ -153,7 +153,7 @@ import { stagger } from "@/composables/useStagger";
 const visitorStore = useVisitorStore();
 const toast = useToast();
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 const IMAGE_BASE = API_BASE.replace("/api", "");
 
 const showEditModal = ref(false);

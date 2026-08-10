@@ -93,6 +93,13 @@
           </span>
           and wait to be called.
         </p>
+        <button
+          type="button"
+          class="mt-4 rounded-xl border border-white/40 px-4 py-2 text-sm font-semibold"
+          @click="enableUpdates"
+        >
+          {{ updatesMessage || "Enable visit updates" }}
+        </button>
         <div
           class="mt-8 rounded-2xl border-2 border-white/30 bg-white/10 p-5 backdrop-blur"
         >
@@ -306,7 +313,7 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const route = useRoute();
 // /office (no id) → pick destination. /office/:id → register to that office.
@@ -318,6 +325,8 @@ const submitting = ref(false);
 const submitted = ref(false);
 const submittedLogId = ref(null);
 const submittedVisitorImg = ref(null);
+const accessToken = ref(null);
+const updatesMessage = ref("");
 
 // Destination picker state
 const offices = ref([]);
@@ -406,6 +415,7 @@ async function onSubmit() {
       return;
     }
     submittedLogId.value = data.logId;
+    accessToken.value = data.access_token;
     submittedVisitorImg.value = data.visitor?.img || null;
     submitted.value = true;
   } catch (e) {
@@ -413,6 +423,16 @@ async function onSubmit() {
   } finally {
     submitting.value = false;
   }
+}
+
+async function enableUpdates() {
+  if (!accessToken.value) return;
+  if (!("Notification" in window) || Notification.permission === "denied") {
+    updatesMessage.value = "Browser notifications are unavailable";
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  updatesMessage.value = permission === "granted" ? "Updates enabled for this visit" : "Updates remain off";
 }
 </script>
 

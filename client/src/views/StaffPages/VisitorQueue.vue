@@ -406,6 +406,7 @@ import { ref, onMounted, onUnmounted, computed } from "vue";
 import { useVisitorLogStore } from "@/store/visitorLog";
 
 const store = useVisitorLogStore();
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const isModalOpen = ref(false);
 const selectedLog = ref(null);
@@ -456,13 +457,13 @@ const confirmNextStatus = async () => {
   if (!selectedLog.value || !nextStatus.value) return;
 
   await fetch(
-    `${import.meta.env.VITE_API_BASE}/visitor-status/${selectedLog.value.id}/status`,
+    `${API_BASE}/visitor-status/${selectedLog.value.id}/status`,
     {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
       },
+      credentials: "include",
       body: JSON.stringify({
         status: nextStatus.value,
       }),

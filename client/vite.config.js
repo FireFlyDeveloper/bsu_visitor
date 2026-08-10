@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   // loadEnv() reads .env / .env.local / .env.{mode} from the project root.
   const env = loadEnv(mode, __dirname, "VITE_");
 
-  const proxyTarget = env.VITE_API_PROXY_TARGET || "http://localhost:8000";
+  const proxyTarget = env.VITE_API_PROXY_TARGET || "http://127.0.0.1:8000";
   const allowedHosts = (env.VITE_ALLOWED_HOSTS || "localhost")
     .split(",")
     .map((h) => h.trim())

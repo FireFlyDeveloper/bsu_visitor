@@ -14,7 +14,7 @@ export function roleMiddleware(allowedRoles) {
       }
 
       if (!userStore.isLoggedIn) {
-        return next({ name: "login" });
+        return next({ name: "Login" });
       }
 
       const userRole = userStore.currentUser?.role?.name || null;
@@ -30,7 +30,7 @@ export function roleMiddleware(allowedRoles) {
       return next();
     } catch (error) {
       console.error("Middleware error:", error);
-      return next({ name: "login" });
+      return next({ name: "Login" });
     }
   };
 }
