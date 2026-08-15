@@ -57,9 +57,20 @@ npm install              # root: concurrently only
 cp backend/.env.example backend/.env
 cp client/.env.example client/.env
 ```
-Edit `backend/.env` to set a real `JWT_SECRET` and your `CLIENT_URL`
-(comma-separated if you need multiple origins, e.g. local + ngrok).
+Edit `backend/.env` to set a real `JWT_SECRET`. In development, leaving
+`CLIENT_URL` empty allows the Vite origins `http://localhost:5173`,
+`http://127.0.0.1:5173`, and `http://192.168.8.41:5173`. Set `CLIENT_URL`
+explicitly as a comma-separated allowlist for other origins (for example,
+local + ngrok); production must use an explicit allowlist.
 Edit `client/.env` only if you need a non-localhost proxy target or allowed host.
+
+### MVP notification limitation
+The MVP stores validated browser push subscriptions and privacy-safe notification
+events, and the client asks for notification permission explicitly. Actual Web Push
+delivery is disabled until deployment supplies VAPID credentials and a delivery
+worker/provider. The API reports `delivery: "not_configured"` rather than fabricating
+delivery. Visitor status tokens are hashed at rest, expire after seven days, and are
+replaced on repeat registration.
 
 ### 3. Seed the database
 ```bash
@@ -68,8 +79,12 @@ npm run seed             # wipes backend/src/database/database.db + reseeds
 
 ### 4. Run dev
 ```bash
-npm run dev              # starts backend :8000 and frontend :5173 concurrently
+ npm run dev              # selects backend :8000 or the next available port, then starts frontend :5173
 ```
+
+When `PORT` is set, it remains authoritative. Otherwise, `npm run dev` selects
+the first available port starting at 8000 and uses that same port for the Vite
+API proxy.
 
 Default login: **admin / admin123** — change it immediately.
 
@@ -123,23 +138,28 @@ bsu_visitor/
 | GET    | `/api/users/me`                               | any auth      | Current user |
 | GET    | `/api/users`                                  | admin         | List users |
 | POST   | `/api/users`                                  | admin         | Create user |
-| GET    | `/api/visitors`                               | any auth      | List / search visitors |
-| POST   | `/api/visitors`                               | any auth      | Create visitor (multipart) |
+| GET    | `/api/visitors`                               | admin         | List / search visitors |
+| POST   | `/api/visitors`                               | admin         | Create visitor (multipart) |
 | POST   | `/api/visit-logs/register`                    | any auth      | Register visit + issue QR link |
 | GET    | `/api/visit-logs`                             | admin         | All logs (filterable, paginated) |
 | GET    | `/api/visit-logs/pending`                     | staff         | Pending in my offices |
 | GET    | `/api/visit-logs/counts`                      | any auth      | Visits per office |
 | PATCH  | `/api/visit-logs/:id/status`                  | staff/admin   | Update visit status (auto time_out on completed) |
-| PATCH  | `/api/visit-logs/office/:id/status`           | admin         | Bulk update by office |
+| PATCH  | `/api/visit-logs/office/:id/status`           | admin/staff (assigned office) | Bulk update by office |
 | GET    | `/api/visit-logs/status/:status`              | staff         | Filter by status |
 | GET    | `/api/visit-logs/office/:id/status-count`     | any auth      | Status breakdown |
-| GET    | `/api/visitor-status/:status`                | any auth      | List visits by status |
-| GET    | `/api/visitor-status/office/:id/status-count` | any auth    | Count by status per office |
-| GET    | `/api/offices`                                | any auth      | List offices |
+| GET    | `/api/visitor-status/:status`                | admin/staff (assigned office) | List visits by status |
+| GET    | `/api/visitor-status/office/:id/status-count` | admin/staff (assigned office) | Count by status per office |
+| GET    | `/api/offices`                                | admin/staff      | List offices |
 | POST   | `/api/offices`                                | admin         | Create office |
 | GET    | `/api/roles`                                  | any auth      | List roles |
 | PATCH  | `/api/security-guard/office/:id/status`       | security      | Set office open/closed |
-| **GET**| **`/api/security-guard/visitors/active`**     | **security**  | **Visitors still on campus** (time_out IS NULL) |
+| **GET**| **`/api/security-guard/visitors/active`**     | **security**  | **Completed visits awaiting physical sign-out** |
+| POST   | `/api/public/office/:id/register`             | public        | Self-register and receive an opaque status token |
+| GET    | `/api/mvp/visits/:token`                      | public        | Token-scoped visit status lookup |
+| GET/PATCH | `/api/mvp/settings`                        | admin         | Read/update global exit grace period |
+| POST   | `/api/mvp/push-subscriptions`                 | staff/security/admin | Store a Web Push subscription |
+| GET    | `/api/mvp/notification-events`               | staff/security/admin | Read privacy-safe event records |
 
 ---
 
@@ -169,15 +189,15 @@ bsu_visitor/
 |-----|---------|-------|
 | `PORT` | `8000` | Express listen port |
 | `NODE_ENV` | `development` | `production` enables `secure` cookie flag |
-| `JWT_SECRET` | `your-super-secret-…` | **Change in production** |
+| `JWT_SECRET` | none | **Required; at least 32 characters** |
 | `JWT_EXPIRY` | `24h` | Any `ms`/`jsonwebtoken`-compatible string |
-| `CLIENT_URL` | `http://localhost:3000` | Comma-separated CORS allowlist |
+| `CLIENT_URL` | development Vite localhost/LAN origins when unset | Comma-separated CORS allowlist; set explicitly in production |
 
 ### `client/.env`
 | Key | Default | Notes |
 |-----|---------|-------|
 | `VITE_API_BASE` | `/api` | Sent on every fetch. Use full URL in production. |
-| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Vite dev proxy target |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8000` | Vite dev proxy target; `npm run dev` sets it to the selected backend port |
 | `VITE_ALLOWED_HOSTS` | `localhost` | Comma-separated dev-server allowed hosts (for ngrok etc.) |
 
 ---

@@ -33,7 +33,7 @@ export const roleMiddleware = (allowedRoles) => {
     const roleName = userRow?.role_name || null;
     const roleId = userRow?.role_id ?? req.user.role_id ?? null;
 
-    if (!roles.includes(roleName) && !roles.includes(String(roleId))) {
+    if (!userRow || (!roles.includes(roleName) && !roles.includes(String(roleId)))) {
       return res.status(403).json({
         error: "Forbidden: insufficient role",
         required: roles,

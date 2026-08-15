@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1900" viewBox="0 0 1400 1900" role="img" aria-labelledby="title desc">
+  <title id="title">Overall System Flowchart of the BSU Visitor Management System</title>
+  <desc id="desc">Six independent flowchart subflows for public visitor registration, AR navigation, security kiosk registration, staff visit processing, security sign-out, and administrator management.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#263746"/>
+    </marker>
+    <style>
+      .title { font: 700 30px Arial, Helvetica, sans-serif; fill: #17202a; }
+      .subtitle { font: 400 17px Arial, Helvetica, sans-serif; fill: #52606d; }
+      .panelTitle { font: 700 18px Arial, Helvetica, sans-serif; fill: #17324d; }
+      .label { font: 700 14px Arial, Helvetica, sans-serif; fill: #17202a; text-anchor: middle; }
+      .small { font: 400 12px Arial, Helvetica, sans-serif; fill: #34495e; text-anchor: middle; }
+      .tiny { font: 400 12px Arial, Helvetica, sans-serif; fill: #34495e; }
+      .edge { font: 700 11px Arial, Helvetica, sans-serif; fill: #455a64; paint-order: stroke; stroke: #fff; stroke-width: 4px; }
+      .flow { fill: none; stroke: #263746; stroke-width: 2.4; marker-end: url(#arrow); }
+      .loop { fill: none; stroke: #607d8b; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .panel { fill: #fff; stroke: #90a4ae; stroke-width: 2; }
+      .terminator { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2.5; }
+      .process { fill: #e3f2fd; stroke: #1565c0; stroke-width: 2.5; }
+      .decision { fill: #fff8e1; stroke: #ef8f00; stroke-width: 2.5; }
+      .database { fill: #f3e5f5; stroke: #7b1fa2; stroke-width: 2.5; }
+      .ar { fill: #fce4ec; stroke: #c2185b; stroke-width: 2.5; }
+      .caption { font: 400 14px Arial, Helvetica, sans-serif; fill: #34495e; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="1900" fill="#ffffff"/>
+  <rect x="35" y="25" width="1330" height="1850" rx="16" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="700" y="72" class="title" text-anchor="middle">Overall System Flowchart</text>
+  <text x="700" y="101" class="subtitle" text-anchor="middle">Batangas State University Visitor Management System</text>
+
+  <!-- 1. Public visitor registration -->
+  <g aria-label="Public visitor registration subflow">
+    <rect x="60" y="135" width="630" height="490" rx="14" class="panel"/>
+    <text x="80" y="166" class="panelTitle">1. PUBLIC VISITOR REGISTRATION</text>
+    <rect x="270" y="185" width="210" height="42" rx="21" class="terminator"/><text x="375" y="211" class="label">Start</text>
+    <path d="M375 227 V245" class="flow"/>
+    <rect x="220" y="245" width="310" height="48" rx="7" class="process"/><text x="375" y="266" class="label"><tspan x="375">Scan fixed office QR</tspan><tspan x="375" dy="16" class="small">open /office/:id</tspan></text>
+    <path d="M375 293 V311" class="flow"/>
+    <rect x="220" y="311" width="310" height="48" rx="7" class="process"/><text x="375" y="332" class="label"><tspan x="375">Enter visitor details and purpose</tspan><tspan x="375" dy="16" class="small">office-specific form</tspan></text>
+    <path d="M375 359 V374" class="flow"/>
+    <polygon points="375,374 455,414 375,454 295,414" class="decision"/><text x="375" y="410" class="label"><tspan x="375">Required fields</tspan><tspan x="375" dy="15" class="small">valid?</tspan></text>
+    <path d="M295 414 H170 V485" class="flow"/><text x="235" y="405" class="edge">No</text>
+    <rect x="95" y="485" width="150" height="48" rx="7" class="process"/><text x="170" y="506" class="label"><tspan x="170">Show validation</tspan><tspan x="170" dy="16" class="small">error</tspan></text>
+    <path d="M170 485 V335 H220" class="loop"/>
+    <path d="M455 414 H580 V485" class="flow"/><text x="492" y="405" class="edge">Yes</text>
+    <rect x="505" y="485" width="150" height="48" rx="7" class="process"/><text x="580" y="506" class="label"><tspan x="580">Submit registration</tspan><tspan x="580" dy="16" class="small">public endpoint</tspan></text>
+    <path d="M580 533 V550" class="flow"/>
+    <path d="M500 550 C500 542 515 542 525 550 C525 558 500 558 500 550 Z M525 550 C525 542 540 542 550 550 C550 558 525 558 525 550 Z" class="database"/>
+    <text x="375" y="574" class="label">Create pending visit log</text>
+    <path d="M375 585 V594" class="flow"/>
+    <rect x="300" y="594" width="150" height="22" rx="11" class="terminator"/><text x="375" y="609" class="label">End</text>
+  </g>
+
+  <!-- 2. AR navigation -->
+  <g aria-label="AR navigation subflow">
+    <rect x="710" y="135" width="630" height="490" rx="14" class="panel"/>
+    <text x="730" y="166" class="panelTitle">2. AR NAVIGATION</text>
+    <rect x="920" y="185" width="210" height="42" rx="21" class="terminator"/><text x="1025" y="211" class="label">Start</text>
+    <path d="M1025 227 V245" class="flow"/>
+    <rect x="870" y="245" width="310" height="48" rx="7" class="process"/><text x="1025" y="266" class="label"><tspan x="1025">Open /office and select destination</tspan><tspan x="1025" dy="16" class="small">launch AR navigation</tspan></text>
+    <path d="M1025 293 V311" class="flow"/>
+    <polygon points="1025,311 1105,351 1025,391 945,351" class="decision"/><text x="1025" y="347" class="label"><tspan x="1025">Camera / WebXR</tspan><tspan x="1025" dy="15" class="small">supported?</tspan></text>
+    <path d="M945 351 H780 V423" class="flow"/><text x="875" y="342" class="edge">No</text>
+    <rect x="735" y="423" width="150" height="48" rx="7" class="process"/><text x="810" y="444" class="label"><tspan x="810">Show unsupported</tspan><tspan x="810" dy="16" class="small">state</tspan></text>
+    <path d="M1105 351 H1270 V423" class="flow"/><text x="1145" y="342" class="edge">Yes</text>
+    <rect x="1195" y="423" width="150" height="48" rx="7" class="ar"/><text x="1270" y="444" class="label"><tspan x="1270">Localize using</tspan><tspan x="1270" dy="16" class="small">Multiset VPS</tspan></text>
+    <path d="M1270 471 V490 H1025" class="flow"/>
+    <polygon points="1025,490 1105,530 1025,570 945,530" class="decision"/><text x="1025" y="526" class="label"><tspan x="1025">Localized by</tspan><tspan x="1025" dy="15" class="small">VPS?</tspan></text>
+    <path d="M945 530 H900 V375 H1025 V311" class="loop"/><text x="905" y="520" class="edge">No: scan again</text>
+    <path d="M1105 530 H1170" class="flow"/><text x="1120" y="520" class="edge">Yes</text>
+    <rect x="1170" y="506" width="125" height="48" rx="7" class="ar"/><text x="1232" y="527" class="label"><tspan x="1232">Render floor</tspan><tspan x="1232" dy="16" class="small">pathway arrows</tspan></text>
+    <path d="M1170 554 V590 H1030" class="flow"/>
+    <rect x="955" y="590" width="150" height="22" rx="11" class="terminator"/><text x="1030" y="605" class="label">End</text>
+  </g>
+
+  <!-- 3. Security kiosk registration -->
+  <g aria-label="Security kiosk registration subflow">
+    <rect x="60" y="650" width="630" height="490" rx="14" class="panel"/>
+    <text x="80" y="681" class="panelTitle">3. SECURITY KIOSK REGISTRATION</text>
+    <rect x="270" y="700" width="210" height="42" rx="21" class="terminator"/><text x="375" y="726" class="label">Start</text>
+    <path d="M375 742 V760" class="flow"/>
+    <rect x="220" y="760" width="310" height="48" rx="7" class="process"/><text x="375" y="781" class="label"><tspan x="375">Security opens kiosk</tspan><tspan x="375" dy="16" class="small">visitor arrives at guard house</tspan></text>
+    <path d="M375 808 V826" class="flow"/>
+    <rect x="220" y="826" width="310" height="48" rx="7" class="process"/><text x="375" y="847" class="label"><tspan x="375">Enter info, photo, purpose, office</tspan><tspan x="375" dy="16" class="small">kiosk registration form</tspan></text>
+    <path d="M375 874 V889" class="flow"/>
+    <polygon points="375,889 455,929 375,969 295,929" class="decision"/><text x="375" y="925" class="label"><tspan x="375">Required fields</tspan><tspan x="375" dy="15" class="small">valid?</tspan></text>
+    <path d="M295 929 H170 V1000" class="flow"/><text x="235" y="920" class="edge">No</text>
+    <rect x="95" y="1000" width="150" height="48" rx="7" class="process"/><text x="170" y="1021" class="label"><tspan x="170">Show validation</tspan><tspan x="170" dy="16" class="small">error</tspan></text>
+    <path d="M170 1000 V850 H220" class="loop"/>
+    <path d="M455 929 H580 V1000" class="flow"/><text x="492" y="920" class="edge">Yes</text>
+    <rect x="505" y="1000" width="150" height="48" rx="7" class="process"/><text x="580" y="1021" class="label"><tspan x="580">Create or reuse</tspan><tspan x="580" dy="16" class="small">visitor record</tspan></text>
+    <path d="M580 1048 V1060" class="flow"/>
+    <path d="M500 1060 C500 1052 515 1052 525 1060 C525 1068 500 1068 500 1060 Z M525 1060 C525 1052 540 1052 550 1060 C550 1068 525 1068 525 1060 Z" class="database"/>
+    <text x="375" y="1084" class="label">Create pending visit log</text>
+    <path d="M375 1095 V1104" class="flow"/>
+    <rect x="300" y="1104" width="150" height="22" rx="11" class="terminator"/><text x="375" y="1119" class="label">End</text>
+  </g>
+
+  <!-- 4. Staff visit processing -->
+  <g aria-label="Staff visit processing subflow">
+    <rect x="710" y="650" width="630" height="490" rx="14" class="panel"/>
+    <text x="730" y="681" class="panelTitle">4. STAFF VISIT PROCESSING</text>
+    <rect x="920" y="700" width="210" height="42" rx="21" class="terminator"/><text x="1025" y="726" class="label">Start</text>
+    <path d="M1025 742 V760" class="flow"/>
+    <path d="M950 760 C950 752 965 752 975 760 C975 768 950 768 950 760 Z M975 760 C975 752 990 752 1000 760 C1000 768 975 768 975 760 Z" class="database"/>
+    <text x="1025" y="784" class="label">Pending visit log</text>
+    <path d="M1025 795 V813" class="flow"/>
+    <rect x="870" y="813" width="310" height="48" rx="7" class="process"/><text x="1025" y="834" class="label"><tspan x="1025">Staff opens office queue</tspan><tspan x="1025" dy="16" class="small">review visitor purpose</tspan></text>
+    <path d="M1025 861 V876" class="flow"/>
+    <polygon points="1025,876 1105,916 1025,956 945,916" class="decision"/><text x="1025" y="912" class="label"><tspan x="1025">Office transaction</tspan><tspan x="1025" dy="15" class="small">complete?</tspan></text>
+    <path d="M945 916 H820 V813 H870" class="loop"/><text x="860" y="906" class="edge">No: continue visit</text>
+    <path d="M1105 916 H1195 V985" class="flow"/><text x="1120" y="906" class="edge">Yes</text>
+    <rect x="1120" y="985" width="150" height="48" rx="7" class="process"/><text x="1195" y="1006" class="label"><tspan x="1195">Mark visit done</tspan><tspan x="1195" dy="16" class="small">record time_out</tspan></text>
+    <path d="M1195 1033 V1050" class="flow"/>
+    <path d="M1170 1050 C1170 1042 1185 1042 1195 1050 C1195 1058 1170 1058 1170 1050 Z M1195 1050 C1195 1042 1210 1042 1220 1050 C1220 1058 1195 1058 1195 1050 Z" class="database"/>
+    <text x="1025" y="1074" class="label">time_out stored; security can sign out</text>
+    <path d="M1025 1085 V1104" class="flow"/>
+    <rect x="950" y="1104" width="150" height="22" rx="11" class="terminator"/><text x="1025" y="1119" class="label">End</text>
+  </g>
+
+  <!-- 5. Security sign-out -->
+  <g aria-label="Security sign-out subflow">
+    <rect x="60" y="1165" width="630" height="490" rx="14" class="panel"/>
+    <text x="80" y="1196" class="panelTitle">5. SECURITY SIGN-OUT</text>
+    <rect x="270" y="1215" width="210" height="42" rx="21" class="terminator"/><text x="375" y="1241" class="label">Start</text>
+    <path d="M375 1257 V1275" class="flow"/>
+    <rect x="220" y="1275" width="310" height="48" rx="7" class="process"/><text x="375" y="1296" class="label"><tspan x="375">Open security status panel</tspan><tspan x="375" dy="16" class="small">view active visitors</tspan></text>
+    <path d="M375 1323 V1338" class="flow"/>
+    <polygon points="375,1338 455,1378 375,1418 295,1378" class="decision"/><text x="375" y="1374" class="label"><tspan x="375">Visitor physically</tspan><tspan x="375" dy="15" class="small">leaving?</tspan></text>
+    <path d="M295 1378 H170 V1450" class="loop"/><text x="225" y="1368" class="edge">No: keep active</text>
+    <rect x="95" y="1450" width="150" height="48" rx="7" class="process"/><text x="170" y="1471" class="label"><tspan x="170">Wait and monitor</tspan><tspan x="170" dy="16" class="small">status panel</tspan></text>
+    <path d="M170 1450 V1300 H220" class="loop"/>
+    <path d="M455 1378 H580 V1450" class="flow"/><text x="492" y="1368" class="edge">Yes</text>
+    <rect x="505" y="1450" width="150" height="48" rx="7" class="process"/><text x="580" y="1471" class="label"><tspan x="580">Sign out visitor</tspan><tspan x="580" dy="16" class="small">security endpoint</tspan></text>
+    <path d="M580 1498 V1510" class="flow"/>
+    <path d="M500 1510 C500 1502 515 1502 525 1510 C525 1518 500 1518 500 1510 Z M525 1510 C525 1502 540 1502 550 1510 C550 1518 525 1518 525 1510 Z" class="database"/>
+    <text x="375" y="1534" class="label">left_at recorded; visitor no longer active</text>
+    <path d="M375 1545 V1564" class="flow"/>
+    <rect x="300" y="1564" width="150" height="22" rx="11" class="terminator"/><text x="375" y="1579" class="label">End</text>
+  </g>
+
+  <!-- 6. Admin management -->
+  <g aria-label="Admin management subflow">
+    <rect x="710" y="1165" width="630" height="490" rx="14" class="panel"/>
+    <text x="730" y="1196" class="panelTitle">6. ADMIN MANAGEMENT</text>
+    <rect x="920" y="1215" width="210" height="42" rx="21" class="terminator"/><text x="1025" y="1241" class="label">Start</text>
+    <path d="M1025 1257 V1275" class="flow"/>
+    <rect x="870" y="1275" width="310" height="48" rx="7" class="process"/><text x="1025" y="1296" class="label"><tspan x="1025">Admin logs in</tspan><tspan x="1025" dy="16" class="small">open management dashboard</tspan></text>
+    <path d="M1025 1323 V1338" class="flow"/>
+    <polygon points="1025,1338 1105,1378 1025,1418 945,1378" class="decision"/><text x="1025" y="1374" class="label"><tspan x="1025">Select management</tspan><tspan x="1025" dy="15" class="small">area</tspan></text>
+    <path d="M945 1378 H780 V1450" class="flow"/><text x="845" y="1368" class="edge">Users</text>
+    <rect x="735" y="1450" width="150" height="48" rx="7" class="process"/><text x="810" y="1471" class="label"><tspan x="810">Manage users</tspan><tspan x="810" dy="16" class="small">create/update/delete</tspan></text>
+    <path d="M1025 1418 V1450" class="flow"/><text x="1038" y="1440" class="edge">Offices</text>
+    <rect x="950" y="1450" width="150" height="48" rx="7" class="process"/><text x="1025" y="1471" class="label"><tspan x="1025">Manage offices</tspan><tspan x="1025" dy="16" class="small">create/update/delete</tspan></text>
+    <path d="M1105 1378 H1270 V1450" class="flow"/><text x="1145" y="1368" class="edge">Logs</text>
+    <rect x="1195" y="1450" width="150" height="48" rx="7" class="process"/><text x="1270" y="1471" class="label"><tspan x="1270">View visitor</tspan><tspan x="1270" dy="16" class="small">logs</tspan></text>
+    <path d="M810 1498 V1530 H1025" class="flow"/><path d="M1025 1498 V1530" class="flow"/><path d="M1270 1498 V1530 H1025" class="flow"/>
+    <path d="M950 1530 C950 1522 965 1522 975 1530 C975 1538 950 1538 950 1530 Z M975 1530 C975 1522 990 1522 1000 1530 C1000 1538 975 1538 975 1530 Z" class="database"/>
+    <text x="1100" y="1534" class="label">Activity logs updated</text>
+    <path d="M1025 1545 V1564" class="flow"/>
+    <rect x="950" y="1564" width="150" height="22" rx="11" class="terminator"/><text x="1025" y="1579" class="label">End</text>
+  </g>
+
+  <!-- Legend and thesis caption -->
+  <g transform="translate(95,1700)">
+    <text x="0" y="0" class="panelTitle">Legend</text>
+    <rect x="0" y="18" width="28" height="20" rx="10" class="terminator"/><text x="40" y="33" class="tiny">Start / End terminator</text>
+    <rect x="205" y="18" width="28" height="20" rx="4" class="process"/><text x="245" y="33" class="tiny">Process</text>
+    <polygon points="350,18 366,28 350,38 334,28" class="decision"/><text x="380" y="33" class="tiny">Decision</text>
+    <path d="M495 20 C495 14 507 14 515 20 C515 26 495 26 495 20 Z M515 20 C515 14 527 14 535 20 C535 26 515 26 515 20 Z" class="database"/><text x="550" y="33" class="tiny">Stored record</text>
+    <rect x="700" y="18" width="28" height="20" rx="4" class="ar"/><text x="740" y="33" class="tiny">AR activity</text>
+  </g>
+  <text x="700" y="1795" class="caption" text-anchor="middle">Figure 4.x. Overall operational flow of the BSU Visitor Management System, separated into six independent system subflows.</text>
+  <text x="700" y="1820" class="caption" text-anchor="middle">Public and kiosk registration create pending visits; staff completion records time_out; security sign-out records left_at.</text>
+</svg>

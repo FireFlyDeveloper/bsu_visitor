@@ -13,7 +13,7 @@ router.post("/logout", UserController.logout);
 // Protected routes — any authenticated user can read their own data
 router.use(authMiddleware, activityLogger);
 router.get("/me", UserController.getCurrentUser);
-router.get("/all-with-activity", UserController.getAllWithLastActivity);
+router.get("/all-with-activity", roleMiddleware("admin"), UserController.getAllWithLastActivity);
 
 // Admin-only: user management
 router.get("/", roleMiddleware("admin"), UserController.getAll);

@@ -1,10 +1,6 @@
 import { defineStore } from "pinia";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
-
-if (!API_BASE) {
-  throw new Error("VITE_API_BASE is not defined in environment variables");
-}
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const OFFICE_ENDPOINT = `${API_BASE}/offices`;
 

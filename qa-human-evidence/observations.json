@@ -1,0 +1,240 @@
+{
+  "pages": [
+    {
+      "url": "http://localhost:5173/",
+      "title": "BSU Visitor — Campus access management",
+      "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSign in\n\nLIVE CAMPUS VIEW\n\nWelcome to\nBSU Visitor.\n\nA role-based campus access management system for Batangas State University. Sign in to log visitors, manage queues, and monitor campus activity.\n\nOpen dashboard\nPublic AR navigation\n\nTODAY\n\nLive\n\n0\n\nvisitors logged in\n\nOffices\n\n0\n\nUsers\n\n0\n\nActive\n\n0\n\nOFFICES\n\nAvailable right now\nManage →\nNo offices yet\n\nAdd offices in the admin panel to start managing visitors.\n\nVISITOR DIRECTORY\n\nOne profile per guest, reused across visits.\n\nStore name, contact, address, and photo. Returning visitors are matched by contact number on their next check-in.\n\nVISIT LOG\n\nEvery entry, timestamped.\n\nFilter by visitor name, day, or month. Export to CSV or PDF.\n\nROLE-BASED\n\nThree roles.\nAdmin\nSecurity\nStaff\n© 2026 Batangas State University\nNEU · Campus",
+      "links": [
+        {
+          "text": "BSU Visitor\n\nBatangas State University · NEU",
+          "href": "http://localhost:5173/"
+        },
+        {
+          "text": "Sign in",
+          "href": "http://localhost:5173/login"
+        },
+        {
+          "text": "Open dashboard",
+          "href": "http://localhost:5173/admin/dashboard"
+        },
+        {
+          "text": "Public AR navigation",
+          "href": "http://localhost:5173/office"
+        },
+        {
+          "text": "Manage →",
+          "href": "http://localhost:5173/admin/offices"
+        }
+      ]
+    },
+    {
+      "url": "http://localhost:5173/office",
+      "title": "BSU Visitor — Campus access management",
+      "text": "BSU Visitor\n\nBatangas State University\n\nHome\nCamera-guided visitor directions\nChoose your destination before opening AR.\n\nSelect an office first. Your phone will ask for camera access, localize in the mapped area, then show the route marker.\n\nOffices\n\n4 available destinations\n\nWebXR ready\n\nOffice of the Dean\n\nAR route ready\n\nStart route setup\n\nRegistrar\n\nAR route ready\n\nStart route setup\n\nCashier\n\nAR route ready\n\nStart route setup\n\nGuard House\n\nAR route ready\n\nStart route setup\n\nCamera access starts only after you pick a destination. Map MAP_GCEL3WD6ACQL is used for campus localization.",
+      "links": [
+        {
+          "text": "Home",
+          "href": "http://localhost:5173/"
+        }
+      ]
+    },
+    {
+      "url": "http://localhost:5173/navigate",
+      "title": "BSU Visitor — Campus access management",
+      "text": "Navigating to\n\nyour destination\n\nMap MAP_GCEL3WD6ACQL\n\nExit\n\nCAMERA PERMISSION\n\nStart AR when you are on campus.\n\nWe use your camera to localize the route to your destination. Frames stay on your device and the route marker appears only after VPS finds the mapped area.\n\nCamera opens after you tap the button.\nMove slowly while localization is starting.\n\nNo destination specified.\n\nStart AR navigation\n\nIf the button is disabled, AR setup is still checking your browser and device support.",
+      "links": []
+    },
+    {
+      "url": "http://localhost:5173/login",
+      "title": "BSU Visitor — Campus access management",
+      "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus",
+      "links": []
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+    "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+  ],
+  "failedRequests": [],
+  "badResponses": [
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "401 GET http://localhost:5173/api/offices",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "BODY http://localhost:5173/api/offices :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/offices",
+    "BODY http://localhost:5173/api/offices :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/offices",
+    "BODY http://localhost:5173/api/offices :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "500 POST http://localhost:5173/api/users/login",
+    "BODY http://localhost:5173/api/users/login :: {\"message\":\"CORS: origin http://localhost:5173 not allowed\"}",
+    "500 POST http://localhost:5173/api/users/login",
+    "BODY http://localhost:5173/api/users/login :: {\"message\":\"CORS: origin http://localhost:5173 not allowed\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "401 GET http://localhost:5173/api/offices",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "BODY http://localhost:5173/api/offices :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/users/me",
+    "BODY http://localhost:5173/api/users/me :: {\"error\":\"No token provided\"}",
+    "401 GET http://localhost:5173/api/offices",
+    "BODY http://localhost:5173/api/offices :: {\"error\":\"No token provided\"}"
+  ],
+  "officeRouteClick": {
+    "url": "http://localhost:5173/navigate?to=office-of-the-dean&name=Office+of+the+Dean",
+    "text": "Navigating to\n\nOffice of the Dean\n\nMap MAP_GCEL3WD6ACQL\n\nExit\n\nCAMERA PERMISSION\n\nStart AR when you are on campus.\n\nWe use your camera to localize the route to Office of the Dean. Frames stay on your device and the route marker appears only after VPS finds the mapped area.\n\nCamera opens after you tap the button.\nMove slowly while localization is starting.\n\nThis device/browser does not support Multiset WebXR AR. Use Chrome or Edge on an ARCore-capable Android device over HTTPS.\n\nStart AR navigation\n\nIf the button is disabled, AR setup is still checking your browser and device support."
+  },
+  "loginInputs": [
+    {
+      "type": "text",
+      "name": "",
+      "placeholder": "e.g. admin",
+      "required": true
+    },
+    {
+      "type": "password",
+      "name": "",
+      "placeholder": "Your password",
+      "required": true
+    }
+  ],
+  "loginValidation": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus",
+  "invalidLogin": {
+    "url": "http://localhost:5173/login",
+    "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nInternal Server Error\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus"
+  },
+  "adminLogin": {
+    "url": "http://localhost:5173/login",
+    "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nInternal Server Error\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus"
+  },
+  "adminUsers": {
+    "url": "http://localhost:5173/login",
+    "title": "BSU Visitor — Campus access management",
+    "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus",
+    "links": []
+  },
+  "adminToStaff": {
+    "url": "http://localhost:5173/login",
+    "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus"
+  },
+  "adminToSecurity": {
+    "url": "http://localhost:5173/login",
+    "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus"
+  },
+  "unauthAdmin": {
+    "url": "http://localhost:5173/login",
+    "text": "BSU Visitor\n\nBatangas State University · NEU\n\nSIGN IN\n\nWelcome back.\n\nUse your BSU credentials to access the visitor management system.\n\nUsername\nPassword\nSign in\n\nDEMO ACCOUNTS\n\nadmin\nsecurity (sec1)\nstaff (staff1)\n\nON THE RECORD\n\nEvery visitor, every office, every entry — accounted for.\n\nA role-based campus access system for guards, staff, and admins.\n\n© 2026 Batangas State University\nNEU Campus"
+  },
+  "mobileHome": {
+    "horizontalOverflow": false,
+    "url": "http://localhost:5173/",
+    "title": "BSU Visitor — Campus access management",
+    "text": "LIVE CAMPUS VIEW\n\nWelcome to\nBSU Visitor.\n\nA role-based campus access management system for Batangas State University. Sign in to log visitors, manage queues, and monitor campus activity.\n\nOpen dashboard\nPublic AR navigation\n\nTODAY\n\nLive\n\n0\n\nvisitors logged in\n\nOffices\n\n0\n\nUsers\n\n0\n\nActive\n\n0\n\nOFFICES\n\nAvailable right now\nManage →\nNo offices yet\n\nAdd offices in the admin panel to start managing visitors.\n\nVISITOR DIRECTORY\n\nOne profile per guest, reused across visits.\n\nStore name, contact, address, and photo. Returning visitors are matched by contact number on their next check-in.\n\nVISIT LOG\n\nEvery entry, timestamped.\n\nFilter by visitor name, day, or month. Export to CSV or PDF.\n\nROLE-BASED\n\nThree roles.\nAdmin\nSecurity\nStaff\n© 2026 Batangas State University\nNEU · Campus",
+    "links": [
+      {
+        "text": "",
+        "href": "http://localhost:5173/"
+      },
+      {
+        "text": "Sign in ",
+        "href": "http://localhost:5173/login"
+      },
+      {
+        "text": "Open dashboard",
+        "href": "http://localhost:5173/admin/dashboard"
+      },
+      {
+        "text": "Public AR navigation",
+        "href": "http://localhost:5173/office"
+      },
+      {
+        "text": "Manage →",
+        "href": "http://localhost:5173/admin/offices"
+      }
+    ]
+  },
+  "mobileOffice": {
+    "horizontalOverflow": false,
+    "url": "http://localhost:5173/office",
+    "title": "BSU Visitor — Campus access management",
+    "text": "BSU Visitor\n\nBatangas State University\n\nHome\nCamera-guided visitor directions\nChoose your destination before opening AR.\n\nSelect an office first. Your phone will ask for camera access, localize in the mapped area, then show the route marker.\n\nOffices\n\n4 available destinations\n\nOffice of the Dean\n\nAR route ready\n\nStart route setup\n\nRegistrar\n\nAR route ready\n\nStart route setup\n\nCashier\n\nAR route ready\n\nStart route setup\n\nGuard House\n\nAR route ready\n\nStart route setup\n\nCamera access starts only after you pick a destination. Map MAP_GCEL3WD6ACQL is used for campus localization.",
+    "links": [
+      {
+        "text": "Home",
+        "href": "http://localhost:5173/"
+      }
+    ]
+  }
+}

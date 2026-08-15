@@ -64,7 +64,7 @@ class VisitorStatusController {
   static findByStatus(req, res) {
     try {
       const { status } = req.params;
-      const userId = req.user?.id; // from authMiddleware
+       const userId = req.user?.id; // from authMiddleware
 
       const limit = parseInt(req.query.limit) || 20;
       const offset = parseInt(req.query.offset) || 0;
@@ -72,7 +72,9 @@ class VisitorStatusController {
       let result;
 
       // If user is tied to office → filter by office
-      if (userId) {
+       if (req.user.role === "admin") {
+         result = VisitorStatus.findByStatus({ status, limit, offset });
+       } else if (userId) {
         result = VisitorStatus.findByStatusAndOffice({
           userId,
           status,
@@ -103,7 +105,7 @@ class VisitorStatusController {
     try {
       const officeId = req.params.officeId;
 
-      const result = VisitorStatus.countByOffice({ officeId });
+       const result = VisitorStatus.countByOffice({ officeId });
 
       return res.json(result);
     } catch (err) {

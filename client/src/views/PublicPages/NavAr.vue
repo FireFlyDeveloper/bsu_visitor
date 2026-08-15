@@ -243,7 +243,7 @@ let multisetSession = null;
 let multisetAdapter = null;
 
 // ── three.js core ─────────────────────────────────────────────────
-let renderer, scene, camera, navGroup, pathGroup, userConnectorLine, destinationConnectorLine, destinationLabelSprite;
+let renderer, scene, camera, navGroup, pathGroup, destinationLabelSprite;
 let hasDestinationWorldPosition = false;
 let hasPathwayWorldPoints = false;
 let destinationPathwayIndex = -1;
@@ -397,14 +397,6 @@ async function initThree() {
   pathGroup.visible = false;
   scene.add(pathGroup);
 
-  userConnectorLine = createPathSegmentMesh();
-  userConnectorLine.visible = false;
-  scene.add(userConnectorLine);
-
-  destinationConnectorLine = createPathSegmentMesh();
-  destinationConnectorLine.visible = false;
-  scene.add(destinationConnectorLine);
-
   destinationLabelSprite = createDestinationLabelSprite(officeName.value);
   destinationLabelSprite.visible = false;
   scene.add(destinationLabelSprite);
@@ -435,8 +427,6 @@ function hideNavigationPath() {
   routeWorldPoints.length = 0;
   if (navGroup) navGroup.visible = false;
   if (pathGroup) pathGroup.visible = false;
-  if (userConnectorLine) userConnectorLine.visible = false;
-  if (destinationConnectorLine) destinationConnectorLine.visible = false;
   if (destinationLabelSprite) destinationLabelSprite.visible = false;
 }
 
@@ -649,13 +639,9 @@ function updateNavigationPath() {
     !hasDestinationWorldPosition ||
     !hasPathwayWorldPoints ||
     !camera ||
-    !pathGroup ||
-    !userConnectorLine ||
-    !destinationConnectorLine
+    !pathGroup
   ) {
     if (pathGroup) pathGroup.visible = false;
-    if (userConnectorLine) userConnectorLine.visible = false;
-    if (destinationConnectorLine) destinationConnectorLine.visible = false;
     return;
   }
 
@@ -672,13 +658,6 @@ function updateNavigationPath() {
   }
 
   rebuildPathwaySegments(routeWorldPoints);
-  placeSegment(userConnectorLine, userWorldPosition, routeWorldPoints[0]);
-  placeSegment(
-    destinationConnectorLine,
-    routeWorldPoints[routeWorldPoints.length - 1],
-    destinationWorldPosition,
-  );
-  pathGroup.visible = routeWorldPoints.length > 1;
 }
 
 function checkArrivalProximity() {
@@ -916,8 +895,6 @@ function cleanup() {
   hideNavigationPath();
   navGroup = null;
   pathGroup = null;
-  userConnectorLine = null;
-  destinationConnectorLine = null;
   destinationLabelSprite = null;
   hasDestinationWorldPosition = false;
   hasPathwayWorldPoints = false;

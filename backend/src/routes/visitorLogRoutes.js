@@ -4,12 +4,14 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 import upload from "../middleware/upload.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 import { roleMiddleware } from "../middleware/roleMiddleware.js";
+import { assignedOfficeOnly, visitOfficeOnly } from "../middleware/officeAccess.js";
+import { persistImage } from "../middleware/upload.js";
 
 const router = express.Router();
 
 router.use(authMiddleware, activityLogger);
 
-router.get("/", VisitorLogController.getAll);
+router.get("/", roleMiddleware("admin"), VisitorLogController.getAll);
 // Static route must be declared BEFORE the `/:id` parameter route.
 router.get(
   "/overdue",
@@ -18,22 +20,25 @@ router.get(
 );
 router.get(
   "/pending",
+  roleMiddleware("staff"),
   VisitorLogController.getPendingByUserOffice,
 );
-router.get("/counts", VisitorLogController.countPerOffice);
-router.get("/:id", VisitorLogController.getById);
+router.get("/counts", roleMiddleware(["admin", "staff"]), VisitorLogController.countPerOffice);
+router.get("/:id", roleMiddleware(["admin", "staff"]), visitOfficeOnly, VisitorLogController.getById);
 router.post(
   "/register",
   upload.single("img"),
+  persistImage,
   VisitorLogController.register,
 );
-router.post("/", VisitorLogController.create);
-router.put("/:id", VisitorLogController.update);
+router.post("/", roleMiddleware(["admin", "staff"]), assignedOfficeOnly, VisitorLogController.create);
+router.put("/:id", roleMiddleware("admin"), VisitorLogController.update);
 router.patch(
   "/:id/done",
   roleMiddleware(["staff", "admin"]),
+  visitOfficeOnly,
   VisitorLogController.markDone,
 );
-router.delete("/:id", VisitorLogController.delete);
+router.delete("/:id", roleMiddleware("admin"), VisitorLogController.delete);
 
 export default router;
