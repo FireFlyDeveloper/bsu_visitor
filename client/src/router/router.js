@@ -6,6 +6,7 @@ import AdminDashboard from "../views/AdminPages/Dashboard.vue";
 import UserList from "../views/AdminPages/UserList.vue";
 import Register from "../views/AdminPages/Register.vue";
 import AdminLayout from "../layouts/AdminLayout.vue";
+import PublicShell from "../layouts/PublicShell.vue";
 import HomePage from "../views/HomePage.vue";
 
 import { guestMiddleware } from "../middleware/auth.middleware.js";
@@ -20,26 +21,40 @@ import ShowVisitors from "../views/VisitorPages/ShowVisitors.vue";
 import VisitorStatus from "../views/GuardPages/VisitorStatus.vue";
 import OfficeStatus from "../views/GuardPages/OfficeStatus.vue";
 import ShowQr from "../views/VisitorPages/ShowQr.vue";
+import PublicDirectory from "../views/PublicPages/PublicDirectory.vue";
+import PublicRegister from "../views/PublicPages/PublicRegister.vue";
+import PublicStatus from "../views/PublicPages/PublicStatus.vue";
 
 const routes = [
-  { path: "/", name: "Home", component: HomePage },
+  {
+    path: "/",
+    component: PublicShell,
+    children: [
+      { path: "", name: "Home", component: HomePage },
+      { path: "directory", name: "PublicDirectory", component: PublicDirectory },
+      { path: "register", name: "PublicRegister", component: PublicRegister },
+      { path: "status", name: "PublicStatus", component: PublicStatus },
+    ],
+    meta: { requiresAuth: false, publicShell: true },
+  },
   {
     // Public per-office fixed-QR landing page.
     // Visitors scan the QR stuck on the office door → land here
     // → self-register (no auth, no photo).
     path: "/office/:id",
     name: "OfficeVisitorAccess",
-    component: () =>
-      import("../views/PublicPages/OfficeVisitorAccess.vue"),
-    meta: { requiresAuth: false },
+    component: PublicShell,
+    children: [{ path: "", component: () => import("../views/PublicPages/OfficeVisitorAccess.vue") }],
+    meta: { requiresAuth: false, publicShell: true },
   },
   {
     // /office (no id) — public AR navigation picker.
     // Visitors can open the WebXR navigation flow without login.
     path: "/office",
     name: "OfficeNavPicker",
-    component: () => import("../views/PublicPages/OfficeNavPicker.vue"),
-    meta: { requiresAuth: false },
+    component: PublicShell,
+    children: [{ path: "", component: () => import("../views/PublicPages/OfficeNavPicker.vue") }],
+    meta: { requiresAuth: false, publicShell: true },
   },
   {
     // AR navigation — opens the device camera and renders a 3D
@@ -47,31 +62,15 @@ const routes = [
     // from src/config/arNavigation.js.
     path: "/navigate",
     name: "NavAr",
-    component: () => import("../views/PublicPages/NavAr.vue"),
-    meta: { requiresAuth: false },
+    component: PublicShell,
+    children: [{ path: "", component: () => import("../views/PublicPages/NavAr.vue") }],
+    meta: { requiresAuth: false, publicShell: true },
   },
   {
-    // Campus directory — privacy-safe office availability + queue counts.
-    path: "/directory",
-    name: "PublicDirectory",
-    component: () => import("../views/PublicPages/PublicDirectory.vue"),
-    meta: { requiresAuth: false },
-  },
-  {
-    // Public registration — office picker + privacy-safe form. Issues an
-    // opaque token (stored locally) plus reference number and queue position.
-    path: "/register",
-    name: "PublicRegister",
-    component: () => import("../views/PublicPages/PublicRegister.vue"),
-    meta: { requiresAuth: false },
-  },
-  {
-    // Token-based visitor status — accepts the opaque token, shows the
-    // backend-authoritative state and exit deadline. Never PII.
-    path: "/status",
-    name: "PublicStatus",
-    component: () => import("../views/PublicPages/PublicStatus.vue"),
-    meta: { requiresAuth: false },
+    path: "/qr-code",
+    name: "QRCode",
+    component: AdminLayout,
+    children: [{ path: "", component: ShowQr, meta: { requiresAuth: true }, beforeEnter: roleMiddleware("admin") }],
   },
   {
     path: "/login",
@@ -99,19 +98,6 @@ const routes = [
         name: "VisitorLogs",
         component: VisitorLogs,
         meta: { requiresAuth: true },
-      },
-    ],
-  },
-  {
-    path: "/qr-code",
-    component: AdminLayout,
-    children: [
-      {
-        path: "",
-        name: "QRCode",
-        component: ShowQr,
-        meta: { requiresAuth: true },
-        beforeEnter: roleMiddleware("admin"),
       },
     ],
   },

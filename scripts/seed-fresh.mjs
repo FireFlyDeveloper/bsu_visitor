@@ -6,14 +6,17 @@
 // into backend/ before importing the DB module.
 import { existsSync, unlinkSync, mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 // here = /root/tmp/bsu_visitor/scripts
 const projectRoot = resolve(here, "..");
 const backendDir = resolve(projectRoot, "backend");
-const dbPath = resolve(backendDir, "src", "database", "database.db");
+const configuredDatabasePath = process.env.DATABASE_PATH || "src/database/database.db";
+const dbPath = isAbsolute(configuredDatabasePath)
+  ? configuredDatabasePath
+  : resolve(backendDir, configuredDatabasePath);
 const uploadsDir = resolve(backendDir, "uploads");
 
 // Refuse to delete an open SQLite file. A port check can miss another backend
@@ -39,8 +42,8 @@ if (!existsSync(uploadsDir)) {
   console.log(`[seed] created ${uploadsDir}`);
 }
 
-// database.js opens "./src/database/database.db" relative to process.cwd(),
-// so chdir into backend/ before importing it.
+// database.js resolves relative paths from backend/, so chdir there before
+// importing it. An absolute DATABASE_PATH remains isolated as configured.
 process.chdir(backendDir);
 await import(resolve(backendDir, "src", "database", "database.js"));
 await import(resolve(backendDir, "src", "database", "createTableImport.js"));

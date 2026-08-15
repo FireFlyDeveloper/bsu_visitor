@@ -1,4 +1,5 @@
 import "dotenv/config";
+import os from "node:os";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -31,21 +32,36 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 // Middleware
 app.use(helmet());
 
-// CORS — CLIENT_URL is an explicit, comma-separated allowlist and remains
-// authoritative in every environment. Development also supports standalone
-// Vite runs through VITE_PORT; production has no implicit origins.
+// CORS is strict in production. In development, configured origins are
+// additive so an inherited/stale CLIENT_URL cannot omit the active Vite port.
 const configuredClientUrl = process.env.CLIENT_URL?.trim();
 const vitePort = Number(process.env.VITE_PORT || 5173);
+const lanHosts = Object.values(os.networkInterfaces())
+  .flat()
+  .filter((network) => network && network.family === "IPv4" && !network.internal && !/^(docker|veth|br-)/.test(network.address))
+  .map((network) => network.address);
 const defaultDevelopmentOrigins = [
   `http://localhost:${vitePort}`,
   `http://127.0.0.1:${vitePort}`,
   `http://192.168.8.41:${vitePort}`,
+  ...lanHosts.map((host) => `http://${host}:${vitePort}`),
 ];
-const allowedOrigins = (configuredClientUrl ||
-  (process.env.NODE_ENV === "production" ? "" : defaultDevelopmentOrigins.join(",")))
+const normalizeOrigin = (origin) => {
+  try {
+    return new URL(origin.trim()).origin;
+  } catch {
+    return null;
+  }
+};
+const configuredOrigins = (configuredClientUrl || "")
   .split(",")
-  .map((o) => o.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
+const allowedOrigins = [...new Set(
+  process.env.NODE_ENV === "production"
+    ? configuredOrigins
+    : [...configuredOrigins, ...defaultDevelopmentOrigins.map(normalizeOrigin).filter(Boolean)],
+)];
 
 app.use(
   cors({
@@ -95,7 +111,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8765;
 const HOST = process.env.HOST;
 
 app.listen(PORT, HOST, () => {

@@ -38,9 +38,24 @@ export function setExitGraceMinutes(minutes) {
 }
 
 export function recordNotification(audience, officeId, eventType, payload, dedupKey = null) {
-  db.prepare(`INSERT INTO notification_events (audience, office_id, event_type, payload_json, dedup_key)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(dedup_key) DO NOTHING`).run(audience, officeId || null, eventType, JSON.stringify(payload), dedupKey);
+  try {
+    // INSERT OR IGNORE works with the partial unique index used for nullable
+    // dedup keys, unlike ON CONFLICT(dedup_key), which SQLite cannot resolve
+    // against that index.
+    db.prepare(`INSERT OR IGNORE INTO notification_events
+      (audience, office_id, event_type, payload_json, dedup_key)
+      VALUES (?, ?, ?, ?, ?)`).run(audience, officeId || null, eventType, JSON.stringify(payload), dedupKey);
+  } catch (err) {
+    // Registration must remain available for databases from before the MVP
+    // migration, or when notification persistence is otherwise unavailable.
+    try {
+      db.prepare(`INSERT INTO notification_events
+        (audience, office_id, event_type, payload_json)
+        VALUES (?, ?, ?, ?)`).run(audience, officeId || null, eventType, JSON.stringify(payload));
+    } catch (fallbackError) {
+      console.error("notification persistence unavailable:", fallbackError.message);
+    }
+  }
 }
 
 export function isWebPushConfigured() {

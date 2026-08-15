@@ -47,5 +47,14 @@ db.prepare(`CREATE TABLE IF NOT EXISTS notification_events (
 addColumn("visit_logs", "exit_deadline", "DATETIME");
 addColumn("visit_logs", "overdue_acknowledged_at", "DATETIME");
 addColumn("notification_events", "dedup_key", "TEXT");
-db.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_events_dedup
+
+// Repair legacy databases before enforcing notification idempotency. Duplicate
+// keys can exist in databases created before this index was introduced.
+db.prepare(`DELETE FROM notification_events
+  WHERE dedup_key IS NOT NULL AND id NOT IN (
+    SELECT MIN(id) FROM notification_events
+    WHERE dedup_key IS NOT NULL GROUP BY dedup_key
+  )`).run();
+db.prepare(`DROP INDEX IF EXISTS idx_notification_events_dedup`).run();
+db.prepare(`CREATE UNIQUE INDEX idx_notification_events_dedup
   ON notification_events(dedup_key) WHERE dedup_key IS NOT NULL`).run();

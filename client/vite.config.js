@@ -11,7 +11,10 @@ export default defineConfig(({ mode }) => {
   // loadEnv() reads .env / .env.local / .env.{mode} from the project root.
   const env = loadEnv(mode, __dirname, "VITE_");
 
-  const proxyTarget = process.env.VITE_API_PROXY_TARGET || env.VITE_API_PROXY_TARGET || "http://127.0.0.1:8000";
+  // Keep the target controlled by the startup environment, not a stale local
+  // file. The root dev script exports this explicitly for dynamic ports.
+  const proxyTarget = process.env.VITE_API_PROXY_TARGET ||
+    `http://127.0.0.1:${process.env.PORT || 8765}`;
   const port = Number(process.env.VITE_PORT || env.VITE_PORT || 5173);
   const allowedHosts = (env.VITE_ALLOWED_HOSTS || "localhost")
     .split(",")

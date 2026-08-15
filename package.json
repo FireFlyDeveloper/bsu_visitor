@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "backend": "cd backend && PORT=\"${PORT:-$(node ../scripts/select-port.mjs 8000)}\" npm run dev",
+    "backend": "cd backend && PORT=\"${PORT:-$(node ../scripts/select-port.mjs 8765)}\" npm run dev",
     "frontend": "cd client && npm run dev",
-    "dev": "PORT=\"${PORT:-$(node scripts/select-port.mjs 8000)}\"; VITE_PORT=\"${VITE_PORT:-$(node scripts/select-port.mjs 5173)}\"; CLIENT_URL=\"${CLIENT_URL:-http://127.0.0.1:$VITE_PORT}\"; export PORT VITE_PORT CLIENT_URL VITE_API_PROXY_TARGET=\"http://127.0.0.1:$PORT\"; concurrently npm:backend npm:frontend",
-    "backend:port": "node scripts/select-port.mjs 8000",
+    "dev": "PORT=\"${PORT:-$(node scripts/select-port.mjs 8765)}\"; VITE_PORT=\"${VITE_PORT:-$(node scripts/select-port.mjs 5173)}\"; CLIENT_URL=\"$(VITE_PORT=\"$VITE_PORT\" node -e 'const os=require(\"node:os\"),p=process.env.VITE_PORT; const hosts=Object.values(os.networkInterfaces()).flat().filter((i)=>i && i.family===\"IPv4\" && !i.internal && !/^(docker|veth|br-)/.test(i.address)).map((i)=>i.address); process.stdout.write([\"http://localhost:\"+p,\"http://127.0.0.1:\"+p,...new Set(hosts.map((h)=>\"http://\"+h+\":\"+p))].join(\",\"))')\"; export PORT VITE_PORT CLIENT_URL VITE_API_PROXY_TARGET=\"http://127.0.0.1:$PORT\"; concurrently --kill-others-on-fail npm:backend npm:frontend",
+    "backend:port": "node scripts/select-port.mjs 8765",
     "seed": "node scripts/seed-fresh.mjs --root",
-    "test:api": "bash scripts/smoke-test.sh"
+    "test:api": "bash scripts/smoke-test.sh",
+    "test:response": "node --test client/src/utils/response.test.js"
   },
   "keywords": [],
   "author": "",

@@ -1,5 +1,6 @@
 <template>
   <header
+    v-if="!route.meta.publicShell"
     class="sticky top-0 z-50 border-b-2 border-[var(--bsu-red)] bg-white transition-shadow"
     :class="{ 'shadow-[0_2px_8px_rgba(208,17,43,0.08)]': scrolled }"
   >

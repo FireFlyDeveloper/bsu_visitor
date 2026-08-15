@@ -8,9 +8,15 @@
 # Usage:  npm run test:api        (from project root)
 #         bash scripts/smoke-test.sh
 #
-# Override the port with PORT=8000 npm run test:api
+# PORT takes precedence. When unset, use 8000 or the next available port.
 set -u
-BASE="http://localhost:${PORT:-8765}"
+export JWT_SECRET="${JWT_SECRET:-smoke-test-secret-with-at-least-32-characters}"
+if [[ -n "${PORT+x}" ]]; then
+  BACKEND_PORT="$PORT"
+else
+  BACKEND_PORT=$(node "$(dirname "$0")/select-port.mjs" 8000)
+fi
+BASE="http://localhost:$BACKEND_PORT"
 JAR=/tmp/bsu-admin.jar
 SECJAR=/tmp/bsu-sec.jar
 STJAR=/tmp/bsu-staff.jar
@@ -29,7 +35,7 @@ T() {
     if [[ "$data" == @* ]]; then
       local rest="${data#@}"
       if [[ "$rest" == *NONIMAGE* ]]; then
-        args+=(-F "img=@/root/tmp/bsu_visitor/README.md")
+        args+=(-F "img=@$(pwd)/README.md")
         rest="${rest%&NONIMAGE*}"
       else
         args+=(-F "img=@/tmp/tiny.png")
@@ -56,18 +62,17 @@ T() {
 jget() { python3 -c "import json; d=json.load(open('$1')); print(d$2)"; }
 
 echo "=== Phase 0: Re-seed DB for idempotency ==="
-# Tests below create sec1/staff1/visitors; second run must start clean.
-# We must stop the running backend first so it releases the SQLite file handle.
-echo "[smoke] stopping any running backend on :${PORT:-8765}..."
-pkill -f "node src/server.js" 2>/dev/null
-sleep 1
+# Tests below create smoke-specific users and visitors; seeded sec1/staff1 are
+# used for role coverage so the test does not collide with deterministic seed data.
+# The smoke test owns the backend process it starts and never stops unrelated processes.
+echo "[smoke] using backend port :$BACKEND_PORT"
 node "$(dirname "$0")/seed-fresh.mjs" || { echo "FATAL: seed-fresh failed"; exit 1; }
 
-echo "[smoke] starting backend on :${PORT:-8765}..."
-( cd "$(dirname "$0")/../backend" && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+echo "[smoke] starting backend on :$BACKEND_PORT..."
+( cd "$(dirname "$0")/../backend" && PORT="$BACKEND_PORT" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1
-  curl -s -o /dev/null --max-time 1 http://localhost:${PORT:-8765}/api/health && break
+  curl -s -o /dev/null --max-time 1 "http://localhost:$BACKEND_PORT/api/health" && break
   [[ $i -eq 10 ]] && { echo "FATAL: backend did not start"; cat /tmp/bsu_backend_smoke.log; exit 1; }
 done
 echo "[smoke] backend ready (pid $(cat /tmp/bsu_backend_smoke.pid))"
@@ -83,14 +88,27 @@ echo "=== Phase 1: Public + auth ==="
 T "health" 200 GET /api/health "" ""
 T "admin login" 200 POST /api/users/login '{"username":"admin","password":"admin123"}' "$JAR"
 T "me (admin)" 200 GET /api/users/me "" "$JAR"
+T "public offices" 200 GET /api/public/offices "" ""
+T "admin grace settings" 200 GET /api/mvp/settings "" "$JAR"
 
 echo
 echo "=== Phase 2: Admin writes ==="
-T "create sec1" 201 POST /api/users '{"fullname":"Test Sec","username":"sec1","password":"secret123","role_id":2}' "$JAR"
-T "create staff1" 201 POST /api/users '{"fullname":"Test Staff","username":"staff1","password":"secret123","role_id":3,"office_id":1}' "$JAR"
+T "create smoke security user" 201 POST /api/users '{"fullname":"Test Sec","username":"smoke-sec","password":"secret123","role_id":2}' "$JAR"
+T "create smoke staff user" 201 POST /api/users '{"fullname":"Test Staff","username":"smoke-staff","password":"secret123","role_id":3,"office_id":1}' "$JAR"
 T "create visitor" 201 POST /api/visitors '{"fullname":"Juan","contact_number":"0917","address":"Batangas"}' "$JAR"
 VID=$(jget /tmp/_body '["visitorId"]')
 echo "Visitor ID = $VID"
+T "public self-registration" 201 POST /api/public/office/1/register '{"fullname":"Public Juan","contact_number":"09170000001","address":"Batangas","purpose":"Inquiry"}' ""
+TOKEN=$(jget /tmp/_body '["access_token"]')
+NOTIFICATION_COUNT=$(cd "$(dirname "$0")/../backend" && node --input-type=module -e "import Database from 'better-sqlite3'; const db = new Database(process.env.DATABASE_PATH || './src/database/database.db', { readonly: true }); console.log(db.prepare('SELECT COUNT(*) FROM notification_events').get()['COUNT(*)']); db.close();")
+T "public token lookup" 200 GET "/api/mvp/visits/$TOKEN" "" ""
+T "public registration idempotency" 200 POST /api/public/office/1/register '{"fullname":"Public Juan","contact_number":"09170000001","address":"Batangas","purpose":"Inquiry"}' ""
+REPEAT_NOTIFICATION_COUNT=$(cd "$(dirname "$0")/../backend" && node --input-type=module -e "import Database from 'better-sqlite3'; const db = new Database(process.env.DATABASE_PATH || './src/database/database.db', { readonly: true }); console.log(db.prepare('SELECT COUNT(*) FROM notification_events').get()['COUNT(*)']); db.close();")
+if [[ "$REPEAT_NOTIFICATION_COUNT" == "$NOTIFICATION_COUNT" && "$NOTIFICATION_COUNT" -ge 2 ]]; then
+  PASS=$((PASS+1)); ROWS+=("| notification idempotency | repeated public registration | unchanged | $REPEAT_NOTIFICATION_COUNT | ✅ |")
+else
+  FAIL=$((FAIL+1)); ROWS+=("| notification idempotency | repeated public registration | unchanged | $NOTIFICATION_COUNT -> $REPEAT_NOTIFICATION_COUNT | ❌ |")
+fi
 
 echo
 echo "=== Phase 3: Visit lifecycle (with image) ==="
@@ -100,7 +118,7 @@ T "complete visit" 200 PATCH "/api/visitor-status/1/status" '{"status":"complete
 
 echo
 echo "=== Phase 5: Negative validations ==="
-T "duplicate username" 409 POST /api/users '{"fullname":"X","username":"sec1","password":"secret123","role_id":2}' "$JAR"
+T "duplicate username" 409 POST /api/users '{"fullname":"X","username":"smoke-sec","password":"secret123","role_id":2}' "$JAR"
 T "short password" 400 POST /api/users '{"fullname":"X","username":"tiny","password":"abc","role_id":2}' "$JAR"
 T "staff w/o office" 400 POST /api/users '{"fullname":"X","username":"nooff","password":"secret123","role_id":3}' "$JAR"
 T "non-image upload -> 400" 400 POST /api/visit-logs/register "@visitor_id=$VID&office_id=1&purpose=x&NONIMAGE" "$JAR"
@@ -110,6 +128,7 @@ echo "=== Phase 6: Role enforcement ==="
 T "sec1 login" 200 POST /api/users/login '{"username":"sec1","password":"secret123"}' "$SECJAR"
 T "sec1 -> security/visitors/active (allowed)" 200 GET /api/security-guard/visitors/active "" "$SECJAR"
 T "sec1 -> office status (allowed)" 200 PATCH /api/security-guard/office/1/status '{"status":"closed"}' "$SECJAR"
+T "security push subscription abstraction" 201 POST /api/mvp/push-subscriptions '{"audience":"security","subscription":{"endpoint":"https://push.example.test/smoke","keys":{"p256dh":"x","auth":"y"}}}' "$SECJAR"
 T "sec1 -> list users (forbidden)" 403 GET /api/users "" "$SECJAR"
 T "sec1 -> create user (forbidden)" 403 POST /api/users '{"fullname":"X","username":"y","password":"secret123","role_id":2}' "$SECJAR"
 T "staff login" 200 POST /api/users/login '{"username":"staff1","password":"secret123"}' "$STJAR"
@@ -117,7 +136,7 @@ T "staff -> list users (forbidden)" 403 GET /api/users "" "$STJAR"
 T "staff -> create user (forbidden)" 403 POST /api/users '{"fullname":"X","username":"newone","password":"secret123","role_id":2}' "$STJAR"
 T "staff -> security route (forbidden)" 403 GET /api/security-guard/visitors/active "" "$STJAR"
 T "staff -> offices (allowed)" 200 GET /api/offices "" "$STJAR"
-T "staff -> visit-logs (allowed)" 200 GET /api/visit-logs "" "$STJAR"
+T "staff -> all visit-logs (forbidden)" 403 GET /api/visit-logs "" "$STJAR"
 
 echo
 echo "=== Phase 7: Kiosk + office done + guard sign-out + overdue ==="
@@ -138,13 +157,13 @@ T "non-sec kiosk (forbidden)" 403 POST /api/security-guard/kiosk/register '{"ful
 # NOTE: the overdue query enforces a 30-min window, so a freshly-completed
 # visit won't appear. Stop the backend, back-date the row, restart, then check.
 echo "[smoke] back-dating visit 1 to trigger overdue (30-min window)..."
-pkill -f "node src/server.js" 2>/dev/null
+kill "$(cat /tmp/bsu_backend_smoke.pid)" 2>/dev/null
 sleep 1
-sqlite3 backend/src/database/database.db "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), exit_deadline = datetime('now','-45 minutes'), status='completed' WHERE id=1;" 2>/dev/null || true
-( cd backend && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
+( cd backend && DATABASE_PATH="${DATABASE_PATH:-./src/database/database.db}" node --input-type=module -e "import Database from 'better-sqlite3'; const db = new Database(process.env.DATABASE_PATH); db.prepare(\"UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=1\").run(); db.close();" )
+( cd backend && PORT="$BACKEND_PORT" HOST=127.0.0.1 nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1
-  curl -s -o /dev/null --max-time 1 "http://localhost:${PORT:-8765}/api/health" && break
+  curl -s -o /dev/null --max-time 1 "http://localhost:$BACKEND_PORT/api/health" && break
 done
 T "overdue list contains visit 1" 200 GET /api/visit-logs/overdue '' "$SECJAR"
 # Verify the JSON has at least 1 entry

@@ -1,15 +1,7 @@
 import { defineStore } from "pinia";
+import { handleResponse } from "@/utils/response";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
-
-function handleResponse(response) {
-  return response.json().then((body) => {
-    if (!response.ok) {
-      throw new Error(body?.error || response.statusText);
-    }
-    return body;
-  });
-}
 
 export const useUserStore = defineStore("user", {
   state: () => ({

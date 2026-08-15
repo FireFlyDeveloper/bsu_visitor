@@ -286,3 +286,75 @@ h3 { font-size: 1.25rem; line-height: 1.25; }
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ----------------------------------------------------------------
+   Information architecture shells
+   ---------------------------------------------------------------- */
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  background: #f7f7f8;
+  color: var(--bsu-ink);
+}
+.app-shell__sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 60;
+  display: flex;
+  width: 17rem;
+  flex-direction: column;
+  padding: 1.35rem 1rem 1rem;
+  background: #fff;
+  border-right: 1px solid var(--bsu-line);
+}
+.app-shell__brand-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.app-shell__brand, .public-shell__brand { display: flex; align-items: center; gap: .7rem; min-width: 0; text-decoration: none; }
+.app-shell__brand img, .public-shell__brand img { width: 2.6rem; height: 2.6rem; object-fit: contain; }
+.app-shell__brand span, .public-shell__brand span { display: flex; min-width: 0; flex-direction: column; }
+.app-shell__brand strong, .public-shell__brand strong { font-family: var(--font-display); font-size: .95rem; line-height: 1.1; }
+.app-shell__brand small, .public-shell__brand small { margin-top: .2rem; color: var(--bsu-ink-3); font-size: .65rem; line-height: 1.2; }
+.app-shell__context { display: flex; align-items: center; gap: .45rem; margin: 2rem .55rem 1rem; color: var(--bsu-ink-3); font-size: .65rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.app-shell__context-dot { width: .4rem; height: .4rem; border-radius: 99px; background: var(--bsu-green); }
+.app-shell__nav { display: flex; flex: 1; flex-direction: column; gap: .25rem; }
+.app-shell__nav-label { margin: 0 .65rem .55rem; color: var(--bsu-ink-3); font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.app-shell__link { display: flex; align-items: center; gap: .7rem; min-height: 2.7rem; padding: .65rem .7rem; border-radius: .65rem; color: var(--bsu-ink-2); font-size: .84rem; font-weight: 650; text-decoration: none; transition: background .18s ease, color .18s ease; }
+.app-shell__link:hover { background: var(--bsu-paper-2); color: var(--bsu-red); }
+.app-shell__link--active { background: var(--bsu-red-soft); color: var(--bsu-red); }
+.app-shell__icon { display: inline-flex; width: 1.1rem; height: 1.1rem; flex: 0 0 1.1rem; }
+.app-shell__icon svg { width: 100%; height: 100%; }
+.app-shell__account { border-top: 1px solid var(--bsu-line); padding: 1rem .35rem .1rem; }
+.app-shell__user { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+.app-shell__user > span:last-child { display: flex; min-width: 0; flex-direction: column; }
+.app-shell__user strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78rem; }
+.app-shell__user small { color: var(--bsu-ink-3); font-size: .68rem; text-transform: capitalize; }
+.app-shell__avatar { display: inline-flex; width: 2rem; height: 2rem; align-items: center; justify-content: center; flex: 0 0 2rem; border-radius: 99px; background: var(--bsu-red); color: white; font-size: .7rem; font-weight: 800; }
+.app-shell__signout { margin-top: .8rem; padding: .35rem 0; border: 0; background: transparent; color: var(--bsu-ink-3); cursor: pointer; font-size: .75rem; font-weight: 700; }
+.app-shell__signout:hover { color: var(--bsu-red); }
+.app-shell__close { display: none; border: 0; background: transparent; color: var(--bsu-ink-2); font-size: 1.5rem; cursor: pointer; }
+.app-shell__body { min-width: 0; width: calc(100% - 17rem); margin-left: 17rem; }
+.app-shell__main { width: 100%; max-width: 90rem; margin: 0 auto; padding: 2rem clamp(1rem, 3vw, 3rem); }
+.app-shell__mobile-header { display: none; }
+.app-shell__scrim { display: none; }
+.public-shell { min-height: 100dvh; background: var(--bsu-paper-2); }
+.public-shell__header { position: sticky; top: 0; z-index: 40; display: flex; min-height: 4.7rem; align-items: center; gap: 1.5rem; padding: .75rem clamp(1rem, 4vw, 3rem); border-bottom: 1px solid var(--bsu-line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
+.public-shell__brand { margin-right: auto; }
+.public-shell__nav { display: flex; align-items: center; gap: .25rem; }
+.public-shell__nav a { padding: .55rem .7rem; border-radius: .5rem; color: var(--bsu-ink-2); font-size: .82rem; font-weight: 650; text-decoration: none; }
+.public-shell__nav a:hover, .public-shell__nav a.active { background: var(--bsu-red-soft); color: var(--bsu-red); }
+.public-shell__login { padding: .55rem .85rem; border: 1px solid var(--bsu-line); border-radius: .5rem; color: var(--bsu-ink); font-size: .82rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.public-shell__login:hover { border-color: var(--bsu-red); color: var(--bsu-red); }
+@media (max-width: 800px) {
+  .app-shell__sidebar { width: min(17rem, 86vw); transform: translateX(-105%); transition: transform .22s var(--ease-out-soft); box-shadow: 1rem 0 3rem rgba(15, 23, 42, .16); }
+  .app-shell__sidebar--open { transform: translateX(0); }
+  .app-shell__close { display: block; }
+  .app-shell__scrim { display: block; position: fixed; inset: 0; z-index: 50; border: 0; background: rgba(15, 23, 42, .42); cursor: pointer; }
+  .app-shell__body { width: 100%; margin-left: 0; }
+  .app-shell__mobile-header { position: sticky; top: 0; z-index: 30; display: flex; min-height: 3.9rem; align-items: center; gap: .75rem; padding: .65rem 1rem; border-bottom: 1px solid var(--bsu-line); background: rgba(255,255,255,.96); backdrop-filter: blur(14px); }
+  .app-shell__menu { width: 2.3rem; height: 2.3rem; border: 1px solid var(--bsu-line); border-radius: .55rem; background: #fff; color: var(--bsu-ink); cursor: pointer; font-size: 1.1rem; }
+  .app-shell__mobile-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-size: .95rem; font-weight: 750; }
+  .app-shell__mobile-role { margin-left: auto; color: var(--bsu-ink-3); font-size: .68rem; text-transform: capitalize; }
+  .app-shell__main { padding: 1.25rem .9rem 2rem; }
+  .public-shell__header { flex-wrap: wrap; gap: .6rem .8rem; }
+  .public-shell__nav { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; }
+  .public-shell__nav a { white-space: nowrap; }
+}
