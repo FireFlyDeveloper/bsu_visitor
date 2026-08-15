@@ -1,12 +1,10 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "sample_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRY = process.env.JWT_EXPIRY || "24h";
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is missing");
-}
+
 
 class UserController {
   static requiresOffice(roleId) {

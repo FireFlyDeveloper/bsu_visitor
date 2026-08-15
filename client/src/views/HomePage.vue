@@ -291,6 +291,9 @@ import EmptyState from "@/components/EmptyState.vue";
 import { stagger } from "@/composables/useStagger";
 import { parseServerDate } from "@/utils/dateTime";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+const PUBLIC_HOME_ENDPOINT = `${API_BASE}/public-home`;
+
 const officeStore = useOfficeStore();
 const visitorLogStore = useVisitorLogStore();
 const userStore = useUserStore();
@@ -299,8 +302,39 @@ const officeCounts = ref({});
 const todayCount = ref(0);
 const activeCount = ref(0);
 
+async function fetchPublicOffices() {
+  const response = await fetch(`${PUBLIC_HOME_ENDPOINT}/offices`, {
+    credentials: "include",
+  });
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new Error(body?.error || "Unable to load public office availability");
+  }
+
+  return body.offices || [];
+}
+
+async function fetchPublicActiveVisitors() {
+  const response = await fetch(`${PUBLIC_HOME_ENDPOINT}/visitors/active`, {
+    credentials: "include",
+  });
+  const body = await response.json();
+
+  if (!response.ok) {
+    throw new Error(body?.error || "Unable to load public active visitors");
+  }
+
+  return body;
+}
+
 onMounted(async () => {
-  await officeStore.fetchOffices();
+  const publicOffices = await fetchPublicOffices();
+  officeStore.offices = publicOffices;
+  officeCounts.value = Object.fromEntries(
+    publicOffices.map((office) => [office.id, office.queue_count ?? 0]),
+  );
+
   try {
     const res = await visitorLogStore.fetchCountPerOffice();
     officeCounts.value = Object.fromEntries(
@@ -318,7 +352,12 @@ onMounted(async () => {
       const active = await visitorLogStore.fetchActiveVisitors();
       activeCount.value = active.total ?? (active.data || []).length;
     } catch (_) {
-      activeCount.value = all.filter((v) => !v.left_at && v.status !== "left").length;
+      try {
+        const active = await fetchPublicActiveVisitors();
+        activeCount.value = active.total ?? (active.data || []).length;
+      } catch (_) {
+        activeCount.value = all.filter((v) => !v.left_at && v.status !== "left").length;
+      }
     }
   } catch (_) {}
   try {

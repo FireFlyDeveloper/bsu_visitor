@@ -15,9 +15,14 @@ import visitorStatusRoutes from "./routes/visitorStatusRoutes.js";
 import securityGuardRoutes from "./routes/securityGuardRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import publicHomeRoutes from "./routes/publicHomeRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
 import multisetRoutes from "./routes/multisetRoutes.js";
 
 const app = express();
+
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error("JWT_SECRET must be configured with at least 32 characters");
+}
 
 // Middleware
 app.use(helmet());
@@ -56,6 +61,7 @@ app.use("/api/visitor-status", visitorStatusRoutes);
 app.use("/api/security-guard", securityGuardRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/public-home", publicHomeRoutes);
+app.use("/api/settings", settingsRoutes);
 app.use("/api/multiset", multisetRoutes);
 app.use("/api/roles", roleRoutes);
 // Health check

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BSU Visitor Role Flowcharts</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: rgba(15, 23, 42, .92);
+      --panel-2: rgba(30, 41, 59, .72);
+      --line: #475569;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --admin: #a78bfa;
+      --staff: #34d399;
+      --security: #fb7185;
+      --office: #22d3ee;
+      --navigation: #fbbf24;
+      --data: #60a5fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 1040px;
+      background:
+        linear-gradient(rgba(30, 41, 59, .35) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30, 41, 59, .35) 1px, transparent 1px),
+        radial-gradient(circle at top left, rgba(34, 211, 238, .12), transparent 36rem),
+        var(--bg);
+      background-size: 40px 40px, 40px 40px, auto, auto;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 32px;
+    }
+
+    header, main, footer { max-width: 1320px; margin-inline: auto; }
+    header { margin-bottom: 28px; }
+    h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -.05em; }
+    header p, footer { color: var(--muted); line-height: 1.6; }
+    footer { margin-top: 24px; font-size: 12px; }
+
+    .stack { display: grid; gap: 28px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(148, 163, 184, .24);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.34);
+      overflow: hidden;
+    }
+    h2 { margin: 0 0 22px; font-size: 18px; letter-spacing: -.03em; }
+
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .flow.vertical {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-width: 420px;
+    }
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .step {
+      position: relative;
+      min-width: 180px;
+      min-height: 74px;
+      padding: 16px 15px;
+      background: #0f172a;
+      border: 2px solid var(--line);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    .flow:not(.vertical) .step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 22px;
+      z-index: 3;
+    }
+    .flow.vertical .step:not(:last-child)::after {
+      content: "↓";
+      position: absolute;
+      left: 50%;
+      bottom: -21px;
+      transform: translateX(-50%);
+      color: var(--muted);
+      font-size: 18px;
+      z-index: 3;
+    }
+    .step strong { display: block; font-size: 13px; line-height: 1.3; }
+    .step span { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+
+    .admin { border-color: var(--admin); background: rgba(76, 29, 149, .30); }
+    .staff { border-color: var(--staff); background: rgba(6, 78, 59, .30); }
+    .security { border-color: var(--security); background: rgba(136, 19, 55, .30); }
+    .office { border-color: var(--office); background: rgba(8, 51, 68, .30); }
+    .navigation { border-color: var(--navigation); background: rgba(120, 53, 15, .28); }
+    .data { border-color: var(--data); background: rgba(30, 64, 175, .25); }
+
+    .lane {
+      background: rgba(2, 6, 23, .42);
+      border: 1px solid rgba(148, 163, 184, .18);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 100%;
+    }
+    .lane h3 {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 18px;
+      font-size: 15px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+
+    .system-map {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 24px 28px;
+      align-items: start;
+    }
+    .system-map .wide { grid-column: span 3; }
+    .branch-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .key { display: inline-flex; align-items: center; gap: 8px; }
+
+    @media print {
+      body { min-width: 0; padding: 12px; background: #020617; }
+      .panel { break-inside: avoid; box-shadow: none; }
+      .flow { overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BSU Visitor Management System — Role Flowcharts</h1>
+    <p>Admin, Staff, Security, Office, Navigation, and Whole System process flows. Layout rebuilt with fixed spacing so cards and labels do not overlap.</p>
+  </header>
+
+  <main class="stack">
+    <section class="panel">
+      <h2>Whole System Flow</h2>
+      <div class="system-map">
+        <div class="wide flow">
+          <div class="step data"><strong>Start</strong><span>User opens BSU Visitor system</span></div>
+          <div class="step data"><strong>Choose Path</strong><span>public visitor or authenticated user</span></div>
+        </div>
+
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--office)"></span>Public Office Visit</h3>
+          <div class="flow vertical">
+            <div class="step office"><strong>Open Office Page</strong><span>/office/:id or QR link</span></div>
+            <div class="step office"><strong>Submit Visitor Details</strong><span>name, contact, address, purpose</span></div>
+            <div class="step data"><strong>Create Visit Log</strong><span>status pending</span></div>
+            <div class="step staff"><strong>Staff Queue</strong><span>visitor waits for office processing</span></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--data)"></span>Authenticated Users</h3>
+          <div class="flow vertical">
+            <div class="step data"><strong>Login</strong><span>credentials verified</span></div>
+            <div class="step data"><strong>Role Check</strong><span>Admin / Staff / Security</span></div>
+            <div class="step admin"><strong>Admin</strong><span>manage records and dashboards</span></div>
+            <div class="step staff"><strong>Staff</strong><span>process office visitors</span></div>
+            <div class="step security"><strong>Security</strong><span>kiosk, active visitors, sign out</span></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--navigation)"></span>Public Navigation</h3>
+          <div class="flow vertical">
+            <div class="step navigation"><strong>Open Office Picker</strong><span>choose destination office</span></div>
+            <div class="step navigation"><strong>Start AR Navigation</strong><span>camera / WebXR flow</span></div>
+            <div class="step navigation"><strong>Localize Position</strong><span>Multiset query + map pose</span></div>
+            <div class="step navigation"><strong>Render Route</strong><span>visitor follows pathway</span></div>
+          </div>
+        </div>
+
+        <div class="wide flow">
+          <div class="step staff"><strong>Staff Marks Done</strong><span>time_out recorded</span></div>
+          <div class="step security"><strong>Security Signs Out</strong><span>left_at recorded</span></div>
+          <div class="step data"><strong>End</strong><span>visitor no longer active</span></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="key"><span class="dot" style="background:var(--admin)"></span>Admin</span>
+        <span class="key"><span class="dot" style="background:var(--staff)"></span>Staff</span>
+        <span class="key"><span class="dot" style="background:var(--security)"></span>Security</span>
+        <span class="key"><span class="dot" style="background:var(--office)"></span>Office</span>
+        <span class="key"><span class="dot" style="background:var(--navigation)"></span>Navigation</span>
+        <span class="key"><span class="dot" style="background:var(--data)"></span>Database / Shared State</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Admin, Staff, and Security Flows</h2>
+      <div class="role-grid">
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--admin)"></span>Admin Flow</h3>
+          <div class="flow vertical">
+            <div class="step admin"><strong>Login</strong><span>admin account required</span></div>
+            <div class="step admin"><strong>Dashboard</strong><span>system metrics and summaries</span></div>
+            <div class="step admin"><strong>Manage Users</strong><span>create, update, delete accounts</span></div>
+            <div class="step admin"><strong>Manage Offices</strong><span>office records and availability</span></div>
+            <div class="step admin"><strong>View Logs</strong><span>visitor history and audit data</span></div>
+            <div class="step data"><strong>Activity Logged</strong><span>changes recorded</span></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--staff)"></span>Staff Flow</h3>
+          <div class="flow vertical">
+            <div class="step staff"><strong>Login</strong><span>staff account required</span></div>
+            <div class="step staff"><strong>Open Dashboard</strong><span>assigned office queue</span></div>
+            <div class="step staff"><strong>Select Visitor</strong><span>review purpose and time in</span></div>
+            <div class="step staff"><strong>Process Transaction</strong><span>serve visitor in office</span></div>
+            <div class="step staff"><strong>Mark Done</strong><span>set time_out</span></div>
+            <div class="step security"><strong>Security Sign-Out Next</strong><span>visitor still active until exit</span></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--security)"></span>Security Flow</h3>
+          <div class="flow vertical">
+            <div class="step security"><strong>Login</strong><span>guard account required</span></div>
+            <div class="step security"><strong>Kiosk Registration</strong><span>details, purpose, office, photo</span></div>
+            <div class="step data"><strong>Photo Snapshot</strong><span>visitor_img saved per visit log</span></div>
+            <div class="step security"><strong>Monitor Active Visitors</strong><span>real time on site</span></div>
+            <div class="step security"><strong>Sign Out Visitor</strong><span>set left_at and status left</span></div>
+            <div class="step data"><strong>Visit Complete</strong><span>removed from active list</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--office)"></span>Office Flow</h3>
+          <div class="flow vertical">
+            <div class="step office"><strong>Office QR / Link</strong><span>visitor opens public office page</span></div>
+            <div class="step office"><strong>Office Details Loaded</strong><span>office exists and accepts visitor</span></div>
+            <div class="step office"><strong>Visitor Registers</strong><span>form validation before submit</span></div>
+            <div class="step data"><strong>Pending Visit Log</strong><span>visible to assigned staff</span></div>
+            <div class="step staff"><strong>Queue Count Updates</strong><span>pending / processing visitors only</span></div>
+          </div>
+        </div>
+
+        <div class="lane">
+          <h3><span class="dot" style="background:var(--navigation)"></span>Navigation Flow</h3>
+          <div class="flow vertical">
+            <div class="step navigation"><strong>Open Office Picker</strong><span>public destination selection</span></div>
+            <div class="step navigation"><strong>Choose Destination</strong><span>office ID and name passed to route</span></div>
+            <div class="step navigation"><strong>Request Camera / AR</strong><span>permission and capability check</span></div>
+            <div class="step navigation"><strong>Localize Position</strong><span>Multiset token and query frame</span></div>
+            <div class="step navigation"><strong>Draw Pathway</strong><span>route line and live connector</span></div>
+            <div class="step navigation"><strong>Arrival Alert</strong><span>destination reached</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Fixed HTML layout: all diagrams use CSS grid lanes with fixed gaps, vertical stacks, and non-overlapping connectors.
+  </footer>
+</body>
+</html>

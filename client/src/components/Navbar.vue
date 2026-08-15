@@ -151,7 +151,12 @@ const mobileOpen = ref(false);
 const scrolled = ref(false);
 
 const navigation = {
-  null: [{ name: "Sign in", path: "/login" }],
+  null: [
+    { name: "Directory", path: "/directory" },
+    { name: "Register", path: "/register" },
+    { name: "Status", path: "/status" },
+    { name: "Sign in", path: "/login" },
+  ],
   admin: [
     { name: "Availability", path: "/" },
     { name: "Visitor Log", path: "/visitors/logs" },
@@ -161,14 +166,12 @@ const navigation = {
   staff: [
     { name: "Availability", path: "/" },
     { name: "Visitor Log", path: "/visitors/logs" },
-    { name: "QR Codes", path: "/qr-code" },
     { name: "Staff Dashboard", path: "/staff/dashboard" },
   ],
   security: [
     { name: "Kiosk", path: "/security/kiosk" },
     { name: "Availability", path: "/" },
     { name: "Visitor Log", path: "/visitors/logs" },
-    { name: "QR Codes", path: "/qr-code" },
     { name: "Security Panel", path: "/security/visitors/status" },
   ],
 };

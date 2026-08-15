@@ -140,7 +140,7 @@ T "non-sec kiosk (forbidden)" 403 POST /api/security-guard/kiosk/register '{"ful
 echo "[smoke] back-dating visit 1 to trigger overdue (30-min window)..."
 pkill -f "node src/server.js" 2>/dev/null
 sleep 1
-sqlite3 backend/src/database/database.db "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=1;" 2>/dev/null || true
+sqlite3 backend/src/database/database.db "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), exit_deadline = datetime('now','-45 minutes'), status='completed' WHERE id=1;" 2>/dev/null || true
 ( cd backend && nohup node src/server.js > /tmp/bsu_backend_smoke.log 2>&1 & echo $! > /tmp/bsu_backend_smoke.pid )
 for i in {1..10}; do
   sleep 1

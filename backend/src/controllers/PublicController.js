@@ -1,11 +1,41 @@
 import db from "../database/database.js";
 import VisitLog from "../models/VisitLog.js";
 import Visitor from "../models/Visitor.js";
+import {
+  generateOpaqueToken,
+  hashToken,
+  generateReferenceNumber,
+} from "../utils/accessToken.js";
+
+const MAX_FULLNAME_LENGTH = 200;
+const MAX_CONTACT_LENGTH = 30;
+const MAX_ADDRESS_LENGTH = 300;
+const MAX_PURPOSE_LENGTH = 500;
+
+function assertFieldLengths({ fullname, contact_number, address, purpose }) {
+  if (String(fullname || "").length > MAX_FULLNAME_LENGTH) {
+    return "fullname is too long";
+  }
+  if (String(contact_number || "").length > MAX_CONTACT_LENGTH) {
+    return "contact_number is too long";
+  }
+  if (String(address || "").length > MAX_ADDRESS_LENGTH) {
+    return "address is too long";
+  }
+  if (String(purpose || "").length > MAX_PURPOSE_LENGTH) {
+    return "purpose is too long";
+  }
+  return null;
+}
 
 /**
- * Public (no-auth) visitor self-registration endpoint.
- * Used when a visitor scans a fixed per-office QR code at the door
- * and registers themselves from their phone — no photo, no login.
+ * Public (no-auth) visitor self-registration and status endpoints.
+ *
+ * The public visitor flow never returns visitor PII: no names, contacts,
+ * addresses, photos, purposes, or raw visit records. Registration returns
+ * a one-time opaque token (only its hash is stored), a reference number,
+ * and the queue position. Status lookups are keyed by the opaque token and
+ * return a privacy-safe projection.
  */
 class PublicController {
   // GET /api/public/office/:id — returns the office so the visitor
@@ -47,19 +77,47 @@ class PublicController {
     }
   }
 
+  // GET /api/public/directory — privacy-safe campus directory with
+  // anonymous queue counts. No visitor records, ever.
+  static directory(req, res) {
+    try {
+      const rows = db
+        .prepare(
+          `SELECT
+             o.id,
+             o.office_name,
+             o.status,
+             o.type,
+             COALESCE((
+               SELECT COUNT(*)
+               FROM visit_logs l
+               WHERE l.office_id = o.id
+                 AND l.status IN ('pending', 'processing')
+                 AND l.left_at IS NULL
+             ), 0) AS queue_count
+           FROM offices o
+           ORDER BY o.office_name`,
+        )
+        .all();
+      return res.json({ offices: rows });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
   // POST /api/public/office/:id/register
-  // body: { fullname, contact_number, address, purpose }
-  // Creates (or reuses) the visitor, then creates a pending visit_log.
-  // Returns the visit_log id so the client can show a confirmation.
+  // POST /api/public/register        (office_id in body)
+  // body: { fullname, contact_number, address, purpose, office_id? }
+  // Privacy-safe response: token (once), reference number, queue position.
   static register(req, res) {
     try {
-      const id = Number(req.params.id);
-      if (!Number.isFinite(id)) {
-        return res.status(400).json({ error: "invalid office id" });
+      const officeId = Number(req.params.id ?? req.body?.office_id);
+      if (!Number.isFinite(officeId)) {
+        return res.status(400).json({ error: "office id is required" });
       }
       const office = db
         .prepare(`SELECT id, office_name FROM offices WHERE id = ?`)
-        .get(id);
+        .get(officeId);
       if (!office) {
         return res.status(404).json({ error: "Office not found" });
       }
@@ -69,6 +127,15 @@ class PublicController {
         return res.status(400).json({
           error: "fullname, contact_number, and address are required",
         });
+      }
+      const lengthError = assertFieldLengths({
+        fullname,
+        contact_number,
+        address,
+        purpose,
+      });
+      if (lengthError) {
+        return res.status(400).json({ error: lengthError });
       }
 
       // Reuse the visitor by contact_number if they exist.
@@ -84,33 +151,101 @@ class PublicController {
         visitor = Visitor.findById(newId);
       }
 
+      // Idempotency: a matching active visit (same visitor + office) is
+      // returned as-is instead of creating a duplicate queue entry. The
+      // raw token cannot be recovered from its stored hash, so an
+      // already-registered response intentionally does not re-issue one.
+      const existing = VisitLog.findByActiveVisitorOffice({
+        visitor_id: visitor.id,
+        office_id: officeId,
+      });
+      if (existing) {
+        return res.status(200).json({
+          ok: true,
+          already_registered: true,
+          reference_number: existing.reference_number || null,
+          queue_position: VisitLog.queuePosition(officeId, existing.id),
+          office: { id: office.id, office_name: office.office_name },
+        });
+      }
+
       const logId = VisitLog.create({
         visitor_id: visitor.id,
-        office_id: id,
+        office_id: officeId,
         purpose: purpose || "",
         logged_by: null,
         status: "pending",
       });
 
-      // Build an absolute URL for the visitor's photo (if any) so the
-      // client can <img src=...> it on the success screen.
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
-      const visitorImg = visitor.img
-        ? `${baseUrl}/${visitor.img}`
-        : null;
+      const token = generateOpaqueToken();
+      const referenceNumber = generateReferenceNumber();
+      VisitLog.setAccessToken(logId, {
+        accessTokenHash: hashToken(token),
+        referenceNumber,
+        registrationSource: "self",
+      });
 
       return res.status(201).json({
         ok: true,
-        logId,
+        already_registered: false,
+        token,
+        reference_number: referenceNumber,
+        queue_position: VisitLog.queuePosition(officeId, logId),
         office: { id: office.id, office_name: office.office_name },
-        visitor: {
-          id: visitor.id,
-          fullname: visitor.fullname,
-          img: visitorImg,
-        },
       });
     } catch (err) {
       console.error("public register error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET /api/public/status/:token
+  // Privacy-safe projection keyed by the opaque token. Returns only what
+  // the visitor needs: reference number, office, status, queue position,
+  // and the authoritative exit deadline. Never visitor PII.
+  static status(req, res) {
+    try {
+      const { token } = req.params;
+      if (
+        typeof token !== "string" ||
+        token.length < 16 ||
+        token.length > 128
+      ) {
+        return res.status(404).json({ error: "Visit not found" });
+      }
+
+      const log = VisitLog.findByAccessTokenHash(hashToken(token));
+      if (!log) {
+        return res.status(404).json({ error: "Visit not found" });
+      }
+
+      const office = db
+        .prepare(`SELECT id, office_name, status FROM offices WHERE id = ?`)
+        .get(log.office_id);
+
+      const updatedAt = [log.time_in, log.time_out, log.left_at, log.overdue_acknowledged_at]
+        .filter(Boolean)
+        .sort()
+        .pop() || log.time_in;
+
+      const inQueue = ["pending", "processing"].includes(log.status);
+
+      return res.json({
+        reference_number: log.reference_number || null,
+        office: office
+          ? { id: office.id, office_name: office.office_name }
+          : null,
+        status: log.status,
+        queue_position: inQueue ? VisitLog.queuePosition(log.office_id, log.id) : null,
+        time_in: log.time_in,
+        time_out: log.time_out,
+        left_at: log.left_at,
+        exit_deadline: log.exit_deadline,
+        overdue_acknowledged_at: log.overdue_acknowledged_at,
+        updated_at: updatedAt,
+      });
+    } catch (err) {
+      console.error("public status error:", err);
       return res.status(500).json({ error: err.message });
     }
   }

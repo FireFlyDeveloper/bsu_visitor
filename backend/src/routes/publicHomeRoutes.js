@@ -1,7 +1,5 @@
 import { Router } from "express";
-import db from "../database/database.js";
 import VisitLog from "../models/VisitLog.js";
-import Visitor from "../models/Visitor.js";
 import Office from "../models/Office.js";
 
 /**
@@ -17,23 +15,10 @@ import Office from "../models/Office.js";
  */
 const router = Router();
 
-function absoluteUrl(req, relativePath) {
-  if (!relativePath) return null;
-  if (relativePath.startsWith("http://") || relativePath.startsWith("https://")) {
-    return relativePath;
-  }
-  return `${req.protocol}://${req.get("host")}/${relativePath}`;
-}
 
 router.get("/offices", (req, res) => {
   try {
-    const rows = db
-      .prepare(
-        `SELECT id, office_name, status, type, latitude, longitude
-         FROM offices
-         ORDER BY office_name`,
-      )
-      .all();
+    const rows = Office.findAll();
     return res.json({ offices: rows });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -42,27 +27,18 @@ router.get("/offices", (req, res) => {
 
 router.get("/visitors/active", (req, res) => {
   try {
-    const rows = VisitLog.findActiveVisits();
-    const data = rows.map((log) => {
-      const visitor = Visitor.findById(log.visitor_id) || {};
-      const office = Office.findById(log.office_id);
-      return {
-        id: log.id,
-        log_id: log.id,
-        visitor_id: log.visitor_id,
-        visitor_name: visitor.fullname || null,
-        contact_number: visitor.contact_number || null,
-        visitor_img: absoluteUrl(req, log.visitor_img || visitor.img || null),
-        office_id: log.office_id,
-        office_name: office?.office_name || null,
-        purpose: log.purpose,
-        status: log.status,
-        time_in: log.time_in,
-        time_out: log.time_out,
-        left_at: log.left_at,
-      };
-    });
-    return res.json({ total: data.length, data });
+    const data = VisitLog.findActiveVisits().reduce((summary, log) => {
+      const key = String(log.office_id);
+      const current = summary.get(key) || { office_id: log.office_id, total: 0 };
+      current.total += 1;
+      summary.set(key, current);
+      return summary;
+    }, new Map());
+    const offices = [...data.values()].map((item) => ({
+      ...item,
+      office_name: Office.findById(item.office_id)?.office_name || null,
+    }));
+    return res.json({ total: offices.reduce((n, item) => n + item.total, 0), offices });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

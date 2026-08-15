@@ -1,5 +1,10 @@
 import Visitor from "../models/Visitor.js";
 import VisitLog from "../models/VisitLog.js";
+import {
+  generateOpaqueToken,
+  hashToken,
+  generateReferenceNumber,
+} from "../utils/accessToken.js";
 
 class KioskController {
   static register(req, res) {
@@ -67,6 +72,16 @@ class KioskController {
         visitor_img: img,
       });
 
+      // Security-assisted registrations get the same token lifecycle so a
+      // smartphone-equipped visitor can check status. Only the hash is stored.
+      const token = generateOpaqueToken();
+      const referenceNumber = generateReferenceNumber();
+      VisitLog.setAccessToken(logId, {
+        accessTokenHash: hashToken(token),
+        referenceNumber,
+        registrationSource: "security",
+      });
+
       const baseUrl = `${req.protocol}://${req.get("host")}`;
 
       if (visitor.img) {
@@ -77,6 +92,9 @@ class KioskController {
         visitor,
         logId,
         office_id: parsedOfficeId,
+        token,
+        reference_number: referenceNumber,
+        queue_position: VisitLog.queuePosition(parsedOfficeId, logId),
       });
     } catch (error) {
       console.error("kiosk register error:", error);

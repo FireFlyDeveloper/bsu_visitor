@@ -51,10 +51,27 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
-    path: "/qr-code",
-    name: "QRCode",
-    component: ShowQr,
-    meta: { requiresAuth: true },
+    // Campus directory — privacy-safe office availability + queue counts.
+    path: "/directory",
+    name: "PublicDirectory",
+    component: () => import("../views/PublicPages/PublicDirectory.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
+    // Public registration — office picker + privacy-safe form. Issues an
+    // opaque token (stored locally) plus reference number and queue position.
+    path: "/register",
+    name: "PublicRegister",
+    component: () => import("../views/PublicPages/PublicRegister.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
+    // Token-based visitor status — accepts the opaque token, shows the
+    // backend-authoritative state and exit deadline. Never PII.
+    path: "/status",
+    name: "PublicStatus",
+    component: () => import("../views/PublicPages/PublicStatus.vue"),
+    meta: { requiresAuth: false },
   },
   {
     path: "/login",
@@ -94,6 +111,7 @@ const routes = [
         name: "QRCode",
         component: ShowQr,
         meta: { requiresAuth: true },
+        beforeEnter: roleMiddleware("admin"),
       },
     ],
   },

@@ -140,7 +140,7 @@ ck "PATCH /api/visit-logs/$LOG_ID/done (idempotent 409)" 409 PATCH "/api/visit-l
 echo "[integration] stopping backend to back-date time_out for overdue test..."
 pkill -f "node src/server.js" 2>/dev/null
 sleep 1
-sqlite3 "$DB" "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), status='completed' WHERE id=$LOG_ID;"
+sqlite3 "$DB" "UPDATE visit_logs SET time_out = datetime('now','-45 minutes'), exit_deadline = datetime('now','-45 minutes'), status='completed' WHERE id=$LOG_ID;"
 echo "[integration] restarting backend..."
 ( cd "$(dirname "$0")/../backend" && nohup node src/server.js > /tmp/bsu_backend_int.log 2>&1 & echo $! > /tmp/bsu_backend_int.pid )
 for i in {1..10}; do
@@ -175,9 +175,9 @@ multipart_ck "kiosk register #2 (for pending queue)" 201 "/api/security-guard/ki
   -F "img=@/tmp/tiny.png"
 LOG2=$(jget /tmp/_body '["logId"]')
 ck "GET /api/public-home/visitors/active" 200 GET /api/public-home/visitors/active "$SECJAR"
-HAS2=$(python3 -c "import json; d=json.load(open('/tmp/_body')); print(1 if any(v['log_id']==$LOG2 for v in d['data']) else 0)")
-if [[ "$HAS2" == "1" ]]; then PASS=$((PASS+1)); ROWS+=("| active list contains $LOG2 | 1 | $HAS2 | ✅ |")
-else FAIL=$((FAIL+1)); ROWS+=("| active list contains $LOG2 | 1 | $HAS2 | ❌ |"); fi
+HAS2=$(python3 -c "import json; d=json.load(open('/tmp/_body')); print(1 if any(v['office_id']==1 and v['total'] >= 1 for v in d['offices']) else 0)")
+if [[ "$HAS2" == "1" ]]; then PASS=$((PASS+1)); ROWS+=("| active aggregate includes office 1 | 1 | $HAS2 | ✅ |")
+else FAIL=$((FAIL+1)); ROWS+=("| active aggregate includes office 1 | 1 | $HAS2 | ❌ |"); fi
 
 # Office availability toggle
 ck "PATCH /api/security-guard/office/1/status busy" 200 PATCH "/api/security-guard/office/1/status" "$SECJAR" '{"status":"busy"}'

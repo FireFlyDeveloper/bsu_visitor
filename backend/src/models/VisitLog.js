@@ -1,4 +1,5 @@
 import db from "../database/database.js";
+import Setting from "./Setting.js";
 
 class VisitLog {
   static create(logData) {
@@ -138,6 +139,62 @@ class VisitLog {
     return stmt.all();
   }
 
+  // An "active" visit for the same visitor+office is one the office has
+  // not finished (and that has not been signed out). Used to make public
+  // registration idempotent: a repeat registration must not create a
+  // duplicate queue entry.
+  static findByActiveVisitorOffice({ visitor_id, office_id }) {
+    return db
+      .prepare(`
+        SELECT *
+        FROM visit_logs
+        WHERE visitor_id = ? AND office_id = ?
+          AND status IN ('pending', 'processing')
+          AND left_at IS NULL
+        ORDER BY time_in ASC, id ASC
+        LIMIT 1
+      `)
+      .get(visitor_id, office_id);
+  }
+
+  static findByAccessTokenHash(accessTokenHash) {
+    return db
+      .prepare(`SELECT * FROM visit_logs WHERE access_token_hash = ?`)
+      .get(accessTokenHash);
+  }
+
+  // Persist only the token hash, never the raw token.
+  static setAccessToken(id, { accessTokenHash, referenceNumber, registrationSource }) {
+    return (
+      db
+        .prepare(`
+          UPDATE visit_logs
+          SET access_token_hash = ?,
+              reference_number = ?,
+              registration_source = ?
+          WHERE id = ?
+        `)
+        .run(accessTokenHash, referenceNumber, registrationSource, id)
+        .changes > 0
+    );
+  }
+
+  // 1-based queue position within the office's single queue. Only
+  // pending/processing visits ahead of this one (by arrival order) count.
+  static queuePosition(officeId, visitId) {
+    const row = db
+      .prepare(`
+        SELECT COUNT(*) AS position
+        FROM visit_logs
+        WHERE office_id = ?
+          AND status IN ('pending', 'processing')
+          AND left_at IS NULL
+          AND id < ?
+      `)
+      .get(officeId, visitId);
+    return (row?.position ?? 0) + 1;
+  }
+
   static update(id, logData) {
     const { visitor_id, office_id, purpose, logged_by } = logData;
 
@@ -229,13 +286,20 @@ class VisitLog {
   }
 
   static markDone(id) {
+    // Shared authoritative exit deadline: completion time + the global
+    // exit grace setting. Security and the visitor see the same value.
+    const graceMinutes = Setting.getExitGraceMinutes();
     const stmt = db.prepare(`
       UPDATE visit_logs
       SET status = 'completed',
-          time_out = COALESCE(time_out, CURRENT_TIMESTAMP)
+          time_out = COALESCE(time_out, CURRENT_TIMESTAMP),
+          exit_deadline = COALESCE(
+            exit_deadline,
+            datetime(CURRENT_TIMESTAMP, '+' || ? || ' minutes')
+          )
       WHERE id = ? AND status != 'completed'
     `);
-    const result = stmt.run(id);
+    const result = stmt.run(graceMinutes, id);
     return result.changes > 0;
   }
 
@@ -252,13 +316,10 @@ class VisitLog {
   }
 
   static findOverdue({ limit = 50, overdueMinutes = 30 } = {}) {
-    // An overdue visit is one that the office has already marked
-    // 'completed' (i.e. the visit itself is over) but the visitor
-    // has not yet left the guard house. The configurable grace window
-    // starts when the visit was completed (time_out), so the alarm
-    // only fires once that window has elapsed. Rows where time_out
-    // is NULL (legacy data) are kept so they cannot silently slip
-    // through the cracks.
+    // A visit is overdue once its authoritative exit_deadline has passed.
+    // Legacy rows without an exit_deadline fall back to the configurable
+    // grace window after completion (time_out), so they cannot silently
+    // slip through the cracks.
     return db
       .prepare(
         `
@@ -271,11 +332,15 @@ class VisitLog {
         l.time_in,
         l.time_out,
         l.left_at,
+        l.exit_deadline,
         v.fullname AS visitor_name,
         v.contact_number,
         COALESCE(l.visitor_img, v.img) AS visitor_img,
         o.office_name,
         CASE
+          WHEN l.exit_deadline IS NOT NULL THEN CAST(
+            (julianday('now') - julianday(l.exit_deadline)) * 24 * 60 AS INTEGER
+          )
           WHEN l.time_out IS NULL THEN NULL
           ELSE CAST(
             (julianday('now') - julianday(l.time_out)) * 24 * 60 AS INTEGER
@@ -287,10 +352,14 @@ class VisitLog {
       WHERE l.status = 'completed'
         AND l.left_at IS NULL
         AND (
-          l.time_out IS NULL
-          OR datetime(l.time_out, '+' || ? || ' minutes') <= datetime('now')
+          (l.exit_deadline IS NOT NULL AND l.exit_deadline <= datetime('now'))
+          OR
+          (l.exit_deadline IS NULL AND (
+            l.time_out IS NULL
+            OR datetime(l.time_out, '+' || ? || ' minutes') <= datetime('now')
+          ))
         )
-      ORDER BY l.time_out DESC NULLS LAST
+      ORDER BY COALESCE(l.exit_deadline, l.time_out) DESC NULLS LAST
       LIMIT ?
     `,
       )

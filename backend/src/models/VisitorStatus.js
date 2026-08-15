@@ -1,4 +1,5 @@
 import db from "../database/database.js";
+import Setting from "./Setting.js";
 
 class VisitorStatus {
   /**
@@ -16,7 +17,10 @@ class VisitorStatus {
     const params = [status];
 
     if (status === "completed") {
-      query += `, time_out = COALESCE(time_out, CURRENT_TIMESTAMP)`;
+      // Set the authoritative shared exit deadline on completion.
+      const graceMinutes = Setting.getExitGraceMinutes();
+      query += `, time_out = COALESCE(time_out, CURRENT_TIMESTAMP), exit_deadline = COALESCE(exit_deadline, datetime(CURRENT_TIMESTAMP, '+' || ? || ' minutes'))`;
+      params.push(graceMinutes);
     }
 
     if (status === "left") {
