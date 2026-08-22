@@ -20,7 +20,6 @@ import Offices from "../views/AdminPages/Offices.vue";
 import ShowVisitors from "../views/VisitorPages/ShowVisitors.vue";
 import VisitorStatus from "../views/GuardPages/VisitorStatus.vue";
 import OfficeStatus from "../views/GuardPages/OfficeStatus.vue";
-import ShowQr from "../views/VisitorPages/ShowQr.vue";
 import PublicDirectory from "../views/PublicPages/PublicDirectory.vue";
 import PublicRegister from "../views/PublicPages/PublicRegister.vue";
 import PublicStatus from "../views/PublicPages/PublicStatus.vue";
@@ -65,12 +64,6 @@ const routes = [
     component: PublicShell,
     children: [{ path: "", component: () => import("../views/PublicPages/NavAr.vue") }],
     meta: { requiresAuth: false, publicShell: true },
-  },
-  {
-    path: "/qr-code",
-    name: "QRCode",
-    component: AdminLayout,
-    children: [{ path: "", component: ShowQr, meta: { requiresAuth: true }, beforeEnter: roleMiddleware("admin") }],
   },
   {
     path: "/login",

@@ -10,7 +10,6 @@ export const roleNavigation = {
     { label: "Offices & availability", to: "/admin/offices", icon: "building" },
     { label: "Visitor operations", to: "/visitors/logs", icon: "users" },
     { label: "Users", to: "/admin/users", icon: "user" },
-    { label: "QR management", to: "/qr-code", icon: "qr" },
   ],
   staff: [
     { label: "Office overview", to: "/staff/dashboard", icon: "grid" },

@@ -161,7 +161,6 @@ const navigation = {
   admin: [
     { name: "Availability", path: "/" },
     { name: "Visitor Log", path: "/visitors/logs" },
-    { name: "QR Codes", path: "/qr-code" },
     { name: "Admin Dashboard", path: "/admin/dashboard" },
   ],
   staff: [
