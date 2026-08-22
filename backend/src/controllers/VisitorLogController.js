@@ -165,6 +165,8 @@ class VisitorLogController {
         visitorName: visitor_name,
         startDate: start_date,
         endDate: end_date,
+        // Staff only ever see their assigned office's history.
+        officeId: req.user.role === "staff" ? req.user.office_id : undefined,
         limit: perPage,
         offset,
       });

@@ -58,11 +58,18 @@ class VisitLog {
     visitorName,
     startDate,
     endDate,
+    officeId,
     limit = 20,
     offset = 0,
   } = {}) {
     const conditions = [];
     const params = [];
+
+    // Staff scoping: restrict to the caller's assigned office.
+    if (officeId) {
+      conditions.push("l.office_id = ?");
+      params.push(officeId);
+    }
 
     if (visitorName) {
       conditions.push("LOWER(v.fullname) LIKE LOWER(?)");

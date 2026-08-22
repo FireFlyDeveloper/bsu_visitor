@@ -23,7 +23,7 @@ export const roleMiddleware = (allowedRoles) => {
     const userId = req.user.id;
     const userRow = db
       .prepare(
-        `SELECT u.role_id, r.role_name
+        `SELECT u.role_id, u.office_id, r.role_name
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
          WHERE u.id = ?`,
@@ -43,6 +43,10 @@ export const roleMiddleware = (allowedRoles) => {
 
     req.user.role = roleName;
     req.user.role_id = roleId;
+    // Authoritative from DB (JWT payloads may predate office assignment).
+    if (req.user.office_id === undefined || req.user.office_id === null) {
+      req.user.office_id = userRow.office_id;
+    }
     next();
   };
 };

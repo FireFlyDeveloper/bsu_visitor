@@ -32,9 +32,11 @@ class User {
       u.role_id,
       u.office_id,
       u.created_at,
-      r.role_name AS role_name
+      r.role_name AS role_name,
+      o.office_name AS office_name
     FROM users u
     LEFT JOIN roles r ON u.role_id = r.id
+    LEFT JOIN offices o ON o.id = u.office_id
     WHERE u.id = ?
   `);
 

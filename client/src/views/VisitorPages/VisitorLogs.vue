@@ -103,7 +103,7 @@
                   <div class="flex items-center gap-3">
                     <img
                       v-if="log.visitor_img"
-                      :src="log.visitor_img"
+                      :src="visitorImageUrl(log.visitor_img)"
                       :alt="log.visitor_name"
                       class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-[var(--line)]"
                       loading="lazy"
@@ -170,23 +170,24 @@
     <!-- Visit detail modal -->
     <BaseModal :model-value="!!selectedLog" @update:model-value="closeLog">
       <template v-if="selectedLog" #header>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
+          <!-- ID-sized visitor picture (1:1 portrait, like a 2x2 ID photo) -->
           <img
             v-if="selectedLog.visitor_img"
-            :src="selectedLog.visitor_img"
-            :alt="selectedLog.visitor_name"
-            class="h-12 w-12 rounded-full object-cover ring-1 ring-[var(--line)]"
+            :src="visitorImageUrl(selectedLog.visitor_img)"
+            :alt="`ID picture of ${selectedLog.visitor_name}`"
+            class="h-28 w-28 shrink-0 rounded-lg border border-[var(--line)] object-cover shadow-sm ring-1 ring-[var(--line)]"
             @error="(e) => (e.target.style.display = 'none')"
           />
           <div
             v-else
-            class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--paper-2)] text-base font-semibold uppercase text-[var(--ink-2)] ring-1 ring-[var(--line)]"
+            class="flex h-28 w-28 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--paper-2)] text-3xl font-semibold uppercase text-[var(--ink-2)]"
           >
             {{ (selectedLog.visitor_name || "?").charAt(0) }}
           </div>
           <div class="min-w-0">
             <h2 class="truncate text-lg font-bold">{{ selectedLog.visitor_name }}</h2>
-            <p class="truncate text-xs tabular text-[var(--ink-3)]">
+            <p class="mt-1 truncate text-xs tabular text-[var(--ink-3)]">
               {{ selectedLog.contact_number || "No contact number" }}
             </p>
           </div>
@@ -244,6 +245,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import BaseModal from "@/components/BaseModal.vue";
 import { useVisitorLogStore } from "@/store/visitorLog";
 import { formatServerDateTime } from "@/utils/dateTime";
+import { visitorImageUrl } from "@/utils/visitorImageUrl";
 
 const visitorLogStore = useVisitorLogStore();
 

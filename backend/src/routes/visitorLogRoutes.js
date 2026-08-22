@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.use(authMiddleware, activityLogger);
 
-router.get("/", roleMiddleware("admin"), VisitorLogController.getAll);
+router.get("/", roleMiddleware(["admin", "staff"]), VisitorLogController.getAll);
 // Static route must be declared BEFORE the `/:id` parameter route.
 router.get(
   "/overdue",

@@ -270,7 +270,7 @@
 
         <button
           @click="nextPage"
-          :disabled="store.loading"
+          :disabled="store.loading || store.page * store.perPage >= store.total"
           class="relative inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         >
           Next

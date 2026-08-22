@@ -14,10 +14,10 @@ import { guestMiddleware } from "../middleware/auth.middleware.js";
 import StaffDashboard from "../views/StaffPages/StaffDashboard.vue";
 import VisitorQueue from "../views/StaffPages/VisitorQueue.vue";
 import StaffVisitorLogs from "../views/StaffPages/StaffVisitorLogs.vue";
+import Profile from "../views/AccountPages/Profile.vue";
 import { roleMiddleware } from "../middleware/role.middleware.js";
 import UnauthorizePage from "../views/ErrorPages/UnauthorizePage.vue";
 import Offices from "../views/AdminPages/Offices.vue";
-import ShowVisitors from "../views/VisitorPages/ShowVisitors.vue";
 import VisitorStatus from "../views/GuardPages/VisitorStatus.vue";
 import OfficeStatus from "../views/GuardPages/OfficeStatus.vue";
 import PublicDirectory from "../views/PublicPages/PublicDirectory.vue";
@@ -163,15 +163,21 @@ const routes = [
         beforeEnter: roleMiddleware("staff"),
       },
       {
-        path: "visitors",
-        name: "VisitorProfile",
-        component: ShowVisitors,
-        meta: { requiresAuth: true },
-        beforeEnter: roleMiddleware("staff"),
-      },
-      {
         path: "",
         redirect: { name: "StaffDashboard" },
+      },
+    ],
+  },
+  {
+    // Account profile — any authenticated role.
+    path: "/profile",
+    component: AdminLayout,
+    children: [
+      {
+        path: "",
+        name: "Profile",
+        component: Profile,
+        meta: { requiresAuth: true },
       },
     ],
   },

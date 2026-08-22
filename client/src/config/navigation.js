@@ -15,8 +15,7 @@ export const roleNavigation = {
     { label: "Office overview", to: "/staff/dashboard", icon: "grid" },
     { label: "Visitor queue", to: "/staff/visitors/queue", icon: "queue" },
     { label: "Visitor history", to: "/staff/visitors/logs", icon: "clock" },
-    { label: "Office availability", to: "/staff/dashboard#availability", icon: "building" },
-    { label: "Profile", to: "/staff/visitors", icon: "user" },
+    { label: "Profile", to: "/profile", icon: "user" },
   ],
   security: [
     { label: "Security overview", to: "/security/visitors/status", icon: "grid" },

@@ -95,6 +95,8 @@ class UserController {
           role_id: user.role_id,
           office_id: user.office_id,
           role: user.role,
+          role_name: user.role_name,
+          office_name: user.office_name,
         },
       });
     } catch (error) {
