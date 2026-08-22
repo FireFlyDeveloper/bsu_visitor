@@ -13,7 +13,8 @@
         </h1>
         <p class="mt-1 max-w-xl text-sm text-[var(--bsu-ink-2)]">
           Pick the office you're here to see. You'll enter your details on the
-          next step — no login, no photo needed.
+ next step — no login needed. A visitor photo will be taken with
+ your camera.
         </p>
       </header>
 

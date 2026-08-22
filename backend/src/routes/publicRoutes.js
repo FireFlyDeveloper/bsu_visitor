@@ -1,5 +1,6 @@
 import { Router } from "express";
 import PublicController from "../controllers/PublicController.js";
+import upload, { persistImage } from "../middleware/upload.js";
 
 const router = Router();
 
@@ -26,12 +27,13 @@ function registerRateLimit(req, res, next) {
 
 // Public (no-auth) endpoints used by the per-office fixed-QR flow.
 // Visitors scan the QR stuck on the office door and self-register
-// from their phone — no login, no photo required.
+// from their phone — no login. A visitor photo IS required (same
+// policy as the security kiosk).
 router.get("/offices", PublicController.listOffices);
 router.get("/directory", PublicController.directory);
 router.get("/office/:id", PublicController.getOffice);
-router.post("/office/:id/register", registerRateLimit, PublicController.register);
-router.post("/register", registerRateLimit, PublicController.register);
+router.post("/office/:id/register", registerRateLimit, upload.single("photo"), persistImage, PublicController.register);
+router.post("/register", registerRateLimit, upload.single("photo"), persistImage, PublicController.register);
 router.get("/status/:token", PublicController.status);
 
 export default router;

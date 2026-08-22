@@ -128,6 +128,10 @@ class PublicController {
           error: "fullname, contact_number, and address are required",
         });
       }
+      // Photo is required for self-registration (same policy as the kiosk).
+      if (!req.file) {
+        return res.status(400).json({ error: "visitor photo is required" });
+      }
       const lengthError = assertFieldLengths({
         fullname,
         contact_number,
@@ -139,6 +143,7 @@ class PublicController {
       }
 
       // Reuse the visitor by contact_number if they exist.
+      const img = `uploads/${req.file.filename}`;
       let visitor = Visitor.findByContactNumber(contact_number);
       if (!visitor) {
         const newId = Visitor.create({
@@ -146,9 +151,12 @@ class PublicController {
           contact_number,
           address,
           id_type: "",
-          img: null,
+          img,
         });
         visitor = Visitor.findById(newId);
+      } else if (!visitor.img) {
+        // Existing profile without a photo — backfill this registration's.
+        Visitor.update(visitor.id, { img });
       }
 
       // Idempotency: a matching active visit (same visitor + office) is
@@ -175,6 +183,7 @@ class PublicController {
         purpose: purpose || "",
         logged_by: null,
         status: "pending",
+        visitor_img: img,
       });
 
       const token = generateOpaqueToken();

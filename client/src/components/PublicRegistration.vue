@@ -122,7 +122,7 @@
         {{ office.office_name }}
       </h1>
       <p class="mt-2 text-sm text-[var(--bsu-ink-2)]">
-        Fill in your details to register your visit. The office will be notified.
+        Fill in your details and take a quick photo to register your visit. The office will be notified.
       </p>
 
       <form class="mt-6 space-y-4" @submit.prevent="onSubmit">
@@ -170,6 +170,66 @@
           />
         </label>
 
+        <!-- Required visitor ID photo -->
+        <fieldset class="rounded-2xl border-2 p-4" :class="photo ? 'border-emerald-300 bg-emerald-50/40' : 'border-[var(--bsu-line)] bg-[var(--bsu-paper-2)]/40'">
+          <legend class="px-1 text-xs font-bold uppercase tracking-wider text-[var(--bsu-ink-2)]">
+            Visitor photo <span class="text-[var(--bsu-red)]">*</span>
+          </legend>
+          <p class="text-xs leading-5 text-[var(--bsu-ink-2)]">
+            A clear front-facing photo is required, like a school ID picture.
+          </p>
+
+          <div v-if="photoPreview" class="mt-3 flex items-center gap-4">
+            <img
+              :src="photoPreview"
+              alt="Your captured visitor photo"
+              class="h-28 w-28 rounded-lg border-2 border-white object-cover shadow-md ring-1 ring-[var(--bsu-line)]"
+            />
+            <div class="flex flex-col gap-2">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                Photo ready
+              </span>
+              <button type="button" class="text-xs font-semibold text-[var(--bsu-red)] underline underline-offset-2" @click="resetPhoto">
+                Retake photo
+              </button>
+            </div>
+          </div>
+
+          <template v-else>
+            <video
+              v-show="cameraActive"
+              ref="videoRef"
+              class="mt-3 aspect-square w-full max-w-[16rem] rounded-xl bg-black object-cover"
+              autoplay
+              playsinline
+              muted
+            />
+            <p v-if="cameraError" class="mt-2 text-xs font-medium text-red-600">{{ cameraError }}</p>
+
+            <button
+              v-if="!cameraActive && cameraSupported"
+              type="button"
+              class="mt-3 inline-flex items-center gap-2 rounded-xl border-2 border-[var(--bsu-red)] px-4 py-2.5 text-sm font-bold text-[var(--bsu-red)] transition hover:bg-[var(--bsu-red)] hover:text-white"
+              @click="startCamera"
+            >
+              📷 Open camera
+            </button>
+            <p v-if="!cameraSupported" class="mt-2 text-xs font-medium text-red-600">
+              This device has no camera available. Please register at the Security / Guard House kiosk instead.
+            </p>
+            <button
+              v-else-if="cameraActive"
+              type="button"
+              class="mt-3 inline-flex w-full max-w-[16rem] items-center justify-center rounded-xl bg-[var(--bsu-red)] px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#a30e22]"
+              @click="captureFromCamera"
+            >
+              Capture photo
+            </button>
+          </template>
+          <canvas ref="canvasRef" class="hidden" />
+        </fieldset>
+
         <p
           v-if="formError"
           class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
@@ -194,7 +254,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
 
 const props = defineProps({
   office: { type: Object, default: null },
@@ -221,22 +281,129 @@ const form = reactive({
   purpose: "",
 });
 
+// --- Required visitor photo (camera capture with upload fallback) ---
+const videoRef = ref(null);
+const canvasRef = ref(null);
+const cameraSupported = !!navigator.mediaDevices?.getUserMedia;
+const cameraActive = ref(false);
+const cameraError = ref("");
+const photo = ref(null); // Blob sent as multipart "photo"
+const photoPreview = ref("");
+let cameraStream = null;
+
+function setPhotoBlob(blob) {
+  photo.value = blob;
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+  photoPreview.value = URL.createObjectURL(blob);
+}
+
+function resetPhoto() {
+  stopCamera();
+  photo.value = null;
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+  photoPreview.value = "";
+}
+function onCameraUnavailable() {
+  cameraError.value =
+    "This device has no camera available. Please register at the Security / Guard House kiosk instead.";
+}
+
+async function startCamera() {
+  cameraError.value = "";
+  if (!navigator.mediaDevices?.getUserMedia) {
+    onCameraUnavailable();
+    return;
+  }
+  try {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "user" } },
+        audio: false,
+      });
+    } catch (_) {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+    cameraStream = stream;
+    cameraActive.value = true;
+    await new Promise((r) => setTimeout(r, 0)); // let <video> mount (v-show)
+    if (videoRef.value) {
+      videoRef.value.srcObject = stream;
+      await videoRef.value.play().catch(() => {});
+    }
+  } catch (err) {
+    stopCamera();
+    cameraError.value =
+      err?.name === "NotAllowedError"
+        ? "Camera permission was denied. Allow camera access in your browser and try again."
+        : "Unable to open the camera. Please register at the Security / Guard House kiosk instead.";
+  }
+}
+
+function stopCamera() {
+  cameraStream?.getTracks().forEach((t) => t.stop());
+  cameraStream = null;
+  cameraActive.value = false;
+}
+
+function captureFromCamera() {
+  const video = videoRef.value;
+  const canvas = canvasRef.value;
+  if (!video || !canvas || !video.videoWidth) {
+    cameraError.value = "Camera is still starting. Please try again.";
+    return;
+  }
+  const size = Math.min(video.videoWidth, video.videoHeight);
+  canvas.width = 480;
+  canvas.height = 480;
+  const ctx = canvas.getContext("2d");
+  // Center-crop the video frame to a square ID-style photo.
+  ctx.drawImage(
+    video,
+    (video.videoWidth - size) / 2,
+    (video.videoHeight - size) / 2,
+    size,
+    size,
+    0,
+    0,
+    480,
+    480,
+  );
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      cameraError.value = "Failed to capture. Please try again.";
+      return;
+    }
+    setPhotoBlob(blob);
+    stopCamera();
+  }, "image/jpeg", 0.9);
+}
+
+onMounted(() => window.addEventListener("pagehide", stopCamera));
+onBeforeUnmount(() => {
+  window.removeEventListener("pagehide", stopCamera);
+  stopCamera();
+  if (photoPreview.value) URL.revokeObjectURL(photoPreview.value);
+});
+
 async function onSubmit() {
   formError.value = "";
+  if (!photo.value) {
+    formError.value = "A visitor photo is required before registering.";
+    return;
+  }
   submitting.value = true;
   try {
+    const body = new FormData();
+    body.append("fullname", form.fullname.trim());
+    body.append("contact_number", form.contact_number.trim());
+    body.append("address", form.address.trim());
+    body.append("purpose", form.purpose.trim());
+    body.append("photo", photo.value, "visitor-photo.jpg");
+
     const res = await fetch(
       `${API_BASE}/public/office/${props.office.id}/register`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullname: form.fullname.trim(),
-          contact_number: form.contact_number.trim(),
-          address: form.address.trim(),
-          purpose: form.purpose.trim(),
-        }),
-      },
+      { method: "POST", body },
     );
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
