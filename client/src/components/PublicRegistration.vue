@@ -119,7 +119,7 @@
       <h1
         class="font-display mt-2 text-3xl font-bold tracking-tight text-[var(--bsu-ink)]"
       >
-        {{ office.office_name }}
+        {{ capitalizeFirst(office.office_name) }}
       </h1>
       <p class="mt-2 text-sm text-[var(--bsu-ink-2)]">
         Fill in your details and take a quick photo to register your visit. The office will be notified.
@@ -265,6 +265,12 @@ const props = defineProps({
 const emit = defineEmits(["back", "submitted"]);
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
+// Office names may be stored lowercase (e.g. "cashier") — capitalize only
+// the first letter so "Office of the Dean" keeps its natural casing.
+function capitalizeFirst(name) {
+  return name ? name.charAt(0).toUpperCase() + name.slice(1) : name;
+}
 
 const formError = ref("");
 const submitting = ref(false);
