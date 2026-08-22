@@ -34,7 +34,10 @@ app.use(helmet());
 
 // CORS is strict in production. In development, configured origins are
 // additive so an inherited/stale CLIENT_URL cannot omit the active Vite port.
+// CLIENT_EXTRA_ORIGINS adds origins (e.g. LAN hostnames) that interface-scan
+// based defaults cannot know about.
 const configuredClientUrl = process.env.CLIENT_URL?.trim();
+const extraClientOrigins = process.env.CLIENT_EXTRA_ORIGINS?.trim();
 const vitePort = Number(process.env.VITE_PORT || 5173);
 const lanHosts = Object.values(os.networkInterfaces())
   .flat()
@@ -53,8 +56,10 @@ const normalizeOrigin = (origin) => {
     return null;
   }
 };
-const configuredOrigins = (configuredClientUrl || "")
-  .split(",")
+const configuredOrigins = [
+  ...(configuredClientUrl || "").split(","),
+  ...(extraClientOrigins || "").split(","),
+]
   .map(normalizeOrigin)
   .filter(Boolean);
 const allowedOrigins = [...new Set(
