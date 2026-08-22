@@ -3,11 +3,15 @@
     <Transition name="modal">
       <div
         v-if="modelValue"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
         @click.self="close"
       >
-        <!-- BACKDROP -->
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+        <!-- BACKDROP (receives outside-click closes; the wrapper's @click.self
+             could never fire because this child covers it) -->
+        <div
+          class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          @click="close"
+        ></div>
 
         <!-- MODAL CARD -->
         <div

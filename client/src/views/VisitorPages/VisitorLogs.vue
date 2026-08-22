@@ -90,7 +90,11 @@
               <tr
                 v-for="log in visitorLogStore.logs"
                 :key="log.id"
-                class="cursor-default transition-colors hover:bg-[var(--paper-2)]/40"
+                class="cursor-pointer transition-colors hover:bg-[var(--paper-2)]/40 focus-visible:bg-[var(--paper-2)]/60 focus-visible:outline-none"
+                tabindex="0"
+                :aria-label="`View visit details for ${log.visitor_name}`"
+                @click="openLog(log)"
+                @keydown.enter.prevent="openLog(log)"
               >
                 <td class="whitespace-nowrap px-6 py-3.5 font-mono text-xs tabular text-[var(--ink-2)]">
                   {{ formatDateTime(log.time_in) }}
@@ -162,6 +166,73 @@
         </div>
       </section>
     </div>
+
+    <!-- Visit detail modal -->
+    <BaseModal :model-value="!!selectedLog" @update:model-value="closeLog">
+      <template v-if="selectedLog" #header>
+        <div class="flex items-center gap-3">
+          <img
+            v-if="selectedLog.visitor_img"
+            :src="selectedLog.visitor_img"
+            :alt="selectedLog.visitor_name"
+            class="h-12 w-12 rounded-full object-cover ring-1 ring-[var(--line)]"
+            @error="(e) => (e.target.style.display = 'none')"
+          />
+          <div
+            v-else
+            class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--paper-2)] text-base font-semibold uppercase text-[var(--ink-2)] ring-1 ring-[var(--line)]"
+          >
+            {{ (selectedLog.visitor_name || "?").charAt(0) }}
+          </div>
+          <div class="min-w-0">
+            <h2 class="truncate text-lg font-bold">{{ selectedLog.visitor_name }}</h2>
+            <p class="truncate text-xs tabular text-[var(--ink-3)]">
+              {{ selectedLog.contact_number || "No contact number" }}
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template v-if="selectedLog">
+        <dl class="space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-[var(--ink-3)]">Office</dt>
+            <dd class="text-right font-semibold">{{ selectedLog.office_name }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-[var(--ink-3)]">Purpose</dt>
+            <dd class="max-w-[60%] text-right" :class="selectedLog.purpose ? 'font-medium' : 'text-[var(--ink-3)]'">
+              {{ selectedLog.purpose || "—" }}
+            </dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-[var(--ink-3)]">Status</dt>
+            <dd>
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize"
+                :class="statusTone(selectedLog.status)"
+              >
+                {{ selectedLog.status || "—" }}
+              </span>
+            </dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-[var(--ink-3)]">Time in</dt>
+            <dd class="tabular font-mono text-xs">{{ formatDateTime(selectedLog.time_in) }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-[var(--ink-3)]">Time out</dt>
+            <dd class="tabular font-mono text-xs">
+              {{ selectedLog.time_out ? formatDateTime(selectedLog.time_out) : "Still on campus" }}
+            </dd>
+          </div>
+        </dl>
+      </template>
+
+      <template v-if="selectedLog" #footer>
+        <AppButton variant="secondary" @click="closeLog">Close</AppButton>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -170,10 +241,20 @@ import { computed, onMounted, ref } from "vue";
 import AppButton from "@/components/AppButton.vue";
 import Skeleton from "@/components/Skeleton.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import BaseModal from "@/components/BaseModal.vue";
 import { useVisitorLogStore } from "@/store/visitorLog";
 import { formatServerDateTime } from "@/utils/dateTime";
 
 const visitorLogStore = useVisitorLogStore();
+
+const selectedLog = ref(null);
+
+function openLog(log) {
+  selectedLog.value = log;
+}
+function closeLog() {
+  selectedLog.value = null;
+}
 
 const filterType = ref("all");
 const selectedDate = ref("");
