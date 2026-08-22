@@ -8,7 +8,9 @@ const router = express.Router();
 
 router.use(authMiddleware, activityLogger);
 
-router.get("/", roleMiddleware(["admin", "staff"]), OfficeController.getAll);
+// Security needs the availability list too (read-only); mutations stay
+// on the dedicated security-guard status endpoint.
+router.get("/", roleMiddleware(["admin", "staff", "security"]), OfficeController.getAll);
 router.get(
   "/staff/dashboard",
   roleMiddleware("staff"),

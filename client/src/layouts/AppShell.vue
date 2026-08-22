@@ -101,5 +101,25 @@ const iconPaths = {
   id: "M4 5h16v14H4zM8 10h3M8 14h5M15 10h2",
   bell: "M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4",
 };
-const Icon = { props: { name: String }, template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path :d="paths[name]" /></svg>`, computed: { paths() { return iconPaths; } } };
+// Render-function icon (runtime `template` strings are not supported by
+// Vue's runtime-only build — icons silently vanished in production builds).
+import { h as vueH } from "vue";
+const Icon = {
+  props: { name: String },
+  render() {
+    return vueH(
+      "svg",
+      {
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": "1.8",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        "aria-hidden": "true",
+      },
+      [vueH("path", { d: iconPaths[this.name] || "" })],
+    );
+  },
+};
 </script>

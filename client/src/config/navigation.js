@@ -17,11 +17,11 @@ export const roleNavigation = {
     { label: "Visitor history", to: "/staff/visitors/logs", icon: "clock" },
   ],
   security: [
-    { label: "Security overview", to: "/security/visitors/status", icon: "grid" },
+    { label: "Security overview", to: "/security/overview", icon: "grid" },
     { label: "Kiosk registration", to: "/security/kiosk", icon: "id" },
     { label: "Active & sign-out", to: "/security/visitors/status", icon: "users" },
     { label: "Office availability", to: "/security/offices/status", icon: "building" },
-    { label: "Notifications", to: "/security/visitors/status#notifications", icon: "bell" },
+    { label: "Notifications", to: "/security/notifications", icon: "bell" },
   ],
 };
 

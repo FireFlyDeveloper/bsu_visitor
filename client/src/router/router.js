@@ -172,11 +172,24 @@ const routes = [
     component: AdminLayout,
     children: [
       {
-        // /security → visitor status (the dashboard has been merged
-        // into the home page; security opens Visitor Status directly)
+        // /security → security overview dashboard
         path: "",
-        name: "SecurityPanel",
-        redirect: { name: "SecurityVisitorStatus" },
+        name: "SecurityOverviewRedirect",
+        redirect: { name: "SecurityOverview" },
+      },
+      {
+        path: "overview",
+        name: "SecurityOverview",
+        component: () => import("../views/GuardPages/SecurityDashboard.vue"),
+        meta: { requiresAuth: true },
+        beforeEnter: roleMiddleware("security"),
+      },
+      {
+        path: "notifications",
+        name: "SecurityNotifications",
+        component: () => import("../views/GuardPages/SecurityNotifications.vue"),
+        meta: { requiresAuth: true },
+        beforeEnter: roleMiddleware("security"),
       },
       {
         path: "kiosk",
