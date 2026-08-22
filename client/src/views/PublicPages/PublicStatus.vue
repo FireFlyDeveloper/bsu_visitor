@@ -2,12 +2,13 @@
   <div class="min-h-[100dvh] bg-[#fbfaf7] text-[var(--bsu-ink)]">
     <div class="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-4 py-8 sm:px-6">
       <header>
-        <p
-          class="eyebrow text-[0.65rem] font-bold uppercase tracking-widest text-[var(--bsu-red)]"
+        <div
+          class="inline-flex items-center gap-2 rounded-full border border-[var(--bsu-line)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--bsu-red)]"
         >
-          BSU Visitor · Visit Status
-        </p>
-        <h1 class="font-display mt-1 text-3xl font-bold tracking-tight">
+          <Search class="h-3.5 w-3.5" aria-hidden="true" />
+          Visit status
+        </div>
+        <h1 class="font-display mt-4 text-3xl font-bold tracking-tight">
           Check your visit
         </h1>
         <p class="mt-1 text-sm text-[var(--bsu-ink-2)]">
@@ -137,9 +138,10 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
+import { Search } from "@lucide/vue";
 import { formatServerTime, formatServerDateTime, parseServerDate } from "@/utils/dateTime";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const route = useRoute();
 const tokenInput = ref("");
@@ -235,9 +237,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.eyebrow {
-  letter-spacing: 0.12em;
-}
 .font-display {
   font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
 }

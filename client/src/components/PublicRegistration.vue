@@ -111,14 +111,6 @@
 
     <!-- Registration form -->
     <div v-else class="rounded-3xl bg-white p-6 text-[var(--bsu-ink)] shadow-2xl">
-      <button
-        v-if="showBack"
-        type="button"
-        @click="$emit('back')"
-        class="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--bsu-red)] hover:underline"
-      >
-        ← Change office
-      </button>
       <p
         class="eyebrow text-[0.65rem] font-bold uppercase tracking-widest text-[var(--bsu-red)]"
       >
@@ -212,7 +204,7 @@ const props = defineProps({
 
 const emit = defineEmits(["back", "submitted"]);
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const formError = ref("");
 const submitting = ref(false);

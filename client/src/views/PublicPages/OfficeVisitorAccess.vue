@@ -1,41 +1,15 @@
 <template>
-  <div
-    class="min-h-screen bg-gradient-to-br from-[var(--bsu-red)] via-[var(--bsu-red)] to-[#7a0e1e] text-white"
-  >
-    <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-6">
-      <!-- Header: BSU brand -->
-      <header class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <img
-            src="/logo/BatStateU-NEU-Logo-1-300x282.png"
-            alt="BSU"
-            class="h-10 w-10"
-          />
-          <div>
-            <p class="font-display text-sm font-bold tracking-tight">
-              BSU Visitor
-            </p>
-            <p class="text-[0.65rem] text-white/80">
-              Batangas State University
-            </p>
-          </div>
-        </div>
-        <img
-          src="/logo/BAGONG_PILIPINAS_LOGO-e1693281031955.png"
-          alt="Bagong Pilipinas"
-          class="h-9 w-9"
-        />
-      </header>
-
+  <div class="min-h-screen bg-[#fbfaf7] text-[var(--bsu-ink)]">
+    <div class="mx-auto flex min-h-screen max-w-md flex-col px-4 py-8">
       <!-- Loading state -->
       <div
         v-if="loadingOffice"
         class="mt-12 flex flex-1 flex-col items-center justify-center"
       >
         <div
-          class="h-10 w-10 animate-spin rounded-full border-4 border-white/30 border-t-white"
+          class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--bsu-red)]/20 border-t-[var(--bsu-red)]"
         />
-        <p class="mt-4 text-sm text-white/80">Loading destination…</p>
+        <p class="mt-4 text-sm text-[var(--bsu-ink-2)]">Loading destination…</p>
       </div>
 
       <!-- Office not found -->
@@ -45,7 +19,7 @@
       >
         <p class="text-6xl">🚫</p>
         <h1 class="mt-4 text-2xl font-bold">Office not found</h1>
-        <p class="mt-2 text-sm text-white/80">
+        <p class="mt-2 text-sm text-[var(--bsu-ink-2)]">
           This QR code may be outdated. Please ask the guard for help.
         </p>
       </div>
@@ -132,7 +106,7 @@
 
       <p
         v-if="!submitted && officeId && !loadingOffice && office"
-        class="mt-6 text-center text-xs text-white/70"
+        class="mt-6 text-center text-xs text-[var(--bsu-ink-2)]"
       >
         Your information is used only for campus visit records.
       </p>
@@ -145,7 +119,7 @@ import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import PublicRegistration from "@/components/PublicRegistration.vue";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const route = useRoute();
 // /office (no id) → pick destination. /office/:id → register to that office.

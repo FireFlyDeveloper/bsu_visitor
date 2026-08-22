@@ -63,7 +63,7 @@
       <section class="w-full max-w-md rounded-[2rem] border border-white/12 bg-white/[0.08] p-5 text-left shadow-[0_28px_80px_rgba(0,0,0,0.42)] backdrop-blur sm:p-6">
         <div class="flex items-start gap-4">
           <div
-            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-[var(--bsu-red)] shadow-[0_14px_34px_rgba(208,17,43,0.36)]"
+            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-[var(--bsu-red)] text-white shadow-[0_14px_34px_rgba(208,17,43,0.36)]"
           >
             <Camera class="h-7 w-7" aria-hidden="true" />
           </div>

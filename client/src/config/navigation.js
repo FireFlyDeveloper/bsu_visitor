@@ -29,6 +29,7 @@ export const roleNavigation = {
 };
 
 export const publicNavigation = [
+  { label: "Home", to: "/" },
   { label: "Find an Office", to: "/directory" },
   { label: "Register", to: "/register" },
   { label: "Check Status", to: "/status" },

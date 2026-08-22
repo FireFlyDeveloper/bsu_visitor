@@ -3,12 +3,13 @@
     <div class="mx-auto max-w-4xl px-4 py-8 sm:px-6">
       <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p
-            class="eyebrow text-[0.65rem] font-bold uppercase tracking-widest text-[var(--bsu-red)]"
+          <div
+            class="inline-flex items-center gap-2 rounded-full border border-[var(--bsu-line)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--bsu-red)]"
           >
-            BSU Visitor · Campus Directory
-          </p>
-          <h1 class="font-display mt-1 text-3xl font-bold tracking-tight">
+            <Building2 class="h-3.5 w-3.5" aria-hidden="true" />
+            Campus directory
+          </div>
+          <h1 class="font-display mt-4 text-3xl font-bold tracking-tight">
             Office directory
           </h1>
           <p class="mt-1 max-w-xl text-sm text-[var(--bsu-ink-2)]">
@@ -99,9 +100,10 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
+import { Building2 } from "@lucide/vue";
 import { findArDestination } from "@/config/arNavigation";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 const offices = ref([]);
 const loading = ref(true);
@@ -129,9 +131,6 @@ onMounted(load);
 </script>
 
 <style scoped>
-.eyebrow {
-  letter-spacing: 0.12em;
-}
 .font-display {
   font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
 }
