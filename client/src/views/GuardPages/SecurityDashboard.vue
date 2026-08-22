@@ -104,7 +104,7 @@
         </span>
         <span class="min-w-0">
           <span class="block font-semibold text-slate-900">Office availability</span>
-          <span class="mt-0.5 block text-xs leading-5 text-slate-500">View and update office status</span>
+          <span class="mt-0.5 block text-xs leading-5 text-slate-500">Live status of every campus office</span>
         </span>
         <svg
           class="ml-auto h-5 w-5 shrink-0 text-slate-300 transition-all duration-200 group-hover:translate-x-1 group-hover:text-slate-600"
