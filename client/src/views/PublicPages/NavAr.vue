@@ -790,7 +790,7 @@ async function setupMultisetVps() {
       if (!destination) {
         hideNavigationPath();
         vpsActive.value = false;
-        errorMsg.value = `No AR coordinate is configured for ${officeName.value}. Choose Dean, Registrar, Cashier, or Guard House.`;
+        errorMsg.value = `No AR coordinate is configured for ${officeName.value}. Choose Dean, Registrar, or Cashier.`;
         return;
       }
 

@@ -122,7 +122,9 @@ const officeStore = useOfficeStore();
 const loading = ref(true);
 const offices = computed(() => officeStore.offices);
 const navigationOffices = computed(() =>
-  AR_DESTINATIONS.map((destination) => {
+  AR_DESTINATIONS
+    .filter((destination) => destination.id !== "guard-house")
+    .map((destination) => {
     const storedOffice = offices.value.find((office) => {
       const officeName = String(office.office_name || "").trim().toLowerCase();
       return destination.aliases?.some(
