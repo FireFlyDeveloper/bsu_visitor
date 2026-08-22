@@ -1,10 +1,18 @@
 <template>
   <div class="min-h-screen bg-[#fffaf8] text-[var(--bsu-ink)]">
     <main>
-      <!-- Hero -->
-      <section class="relative overflow-hidden bg-gradient-to-br from-[#e01130] via-[var(--bsu-red)] to-[#6f0b18] text-white">
-        <div class="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" aria-hidden="true"></div>
-        <div class="pointer-events-none absolute -bottom-32 right-0 h-[28rem] w-[28rem] rounded-full bg-[#ffb3a0]/20 blur-3xl" aria-hidden="true"></div>
+      <!-- Hero — campus photo with red overlay, matching the login design -->
+      <section class="relative overflow-hidden bg-[#6f0b18] text-white">
+        <img
+          src="/img/bsu_outside.png"
+          alt=""
+          aria-hidden="true"
+          class="absolute inset-0 h-full w-full object-cover"
+        />
+        <div
+          class="absolute inset-0 bg-gradient-to-tr from-[var(--bsu-red)]/95 via-[var(--bsu-red)]/75 to-[var(--bsu-red)]/40"
+          aria-hidden="true"
+        ></div>
         <div class="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.2fr_.8fr] lg:px-8 lg:py-24">
           <div>
             <p class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest backdrop-blur">Welcome to Batangas State University</p>
