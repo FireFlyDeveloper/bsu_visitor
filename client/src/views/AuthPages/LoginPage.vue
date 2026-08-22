@@ -162,7 +162,7 @@ async function onSubmit() {
     });
     const destinations = {
       1: { name: "AdminDashboard" },
-      2: { name: "SecurityVisitorStatus" },
+      2: { name: "SecurityOverview" },
       3: { name: "StaffDashboard" },
     };
     await router.push(destinations[userStore.currentUser.role_id] || { name: "Home" });
