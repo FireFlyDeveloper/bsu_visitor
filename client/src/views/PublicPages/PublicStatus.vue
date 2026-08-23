@@ -183,6 +183,46 @@
         </Transition>
       </Teleport>
 
+      <!-- Push notification opt-in prompt -->
+      <Teleport to="body">
+        <Transition name="modal">
+          <div
+            v-if="showPushPrompt"
+            class="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+            @click.self="dismissPushPrompt"
+          >
+            <div class="w-full max-w-sm rounded-t-3xl bg-white p-6 text-center shadow-2xl sm:rounded-3xl sm:p-8">
+              <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+                <svg class="h-7 w-7 text-[var(--bsu-red)]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+              </span>
+              <h2 class="font-display text-xl font-bold tracking-tight">Get live updates</h2>
+              <p class="mt-2 text-sm leading-6 text-[var(--bsu-ink-2)]">
+                Allow notifications so we can alert you the moment your visit status changes — when the office
+                starts processing you, when your visit is complete, and when it's time to sign out.
+              </p>
+              <button
+                type="button"
+                class="btn btn-primary mt-5 w-full justify-center"
+                :disabled="pushEnabling"
+                @click="enablePush"
+              >
+                {{ pushEnabling ? "Turning on…" : "Allow notifications" }}
+              </button>
+              <button
+                type="button"
+                class="mt-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-[var(--bsu-ink-2)] transition hover:bg-slate-50"
+                @click="dismissPushPrompt"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
       <footer class="mt-8 text-center text-xs leading-5 text-[var(--bsu-ink-3)]">
         Personal details are never displayed here — only reference numbers,
         queue positions, and exit deadlines.
@@ -197,6 +237,7 @@ import { useRoute } from "vue-router";
 import { Search } from "@lucide/vue";
 import { formatServerTime, formatServerDateTime, parseServerDate } from "@/utils/dateTime";
 import { getVisitorTokens, saveVisitorToken } from "@/utils/visitorToken";
+import { pushSupported, subscribeVisitorVisits } from "@/utils/push";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 const route = useRoute();
@@ -260,7 +301,62 @@ onMounted(async () => {
 
   await refreshSummaries();
   loadingInitial.value = false;
+  maybeOfferPush();
 });
+
+/* ---------- push opt-in prompt ---------- */
+// Browsers want a user gesture before showing the permission dialog, and
+// visitors should understand WHY notifications help before being asked.
+const PUSH_DISMISS_KEY = "bsu_push_prompt_dismissed_at";
+const PUSH_DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // re-ask after a week, not on every visit
+
+const showPushPrompt = ref(false);
+const pushEnabling = ref(false);
+
+function pushDismissedRecently() {
+  try {
+    const at = Number(localStorage.getItem(PUSH_DISMISS_KEY) || 0);
+    return at > 0 && Date.now() - at < PUSH_DISMISS_TTL_MS;
+  } catch (_) {
+    return false;
+  }
+}
+
+function maybeOfferPush() {
+  if (!saves.value.length || !pushSupported()) return;
+  const perm = Notification.permission;
+  if (perm === "granted") {
+    // Already allowed — refresh subscriptions silently.
+    subscribeVisitorVisits().catch(() => {});
+    return;
+  }
+  if (perm !== "default" || pushDismissedRecently()) return; // denied or snoozed — respect it
+  // Let the page settle so the prompt doesn't fight the initial render.
+  setTimeout(() => {
+    if (!selected.value && Notification.permission === "default") {
+      showPushPrompt.value = true;
+    }
+  }, 1200);
+}
+
+async function enablePush() {
+  pushEnabling.value = true;
+  try {
+    await subscribeVisitorVisits();
+  } catch (_) {
+    /* denial or SW failure — page still works fully */
+  } finally {
+    pushEnabling.value = false;
+    showPushPrompt.value = false;
+  }
+}
+
+function dismissPushPrompt() {
+  try {
+    localStorage.setItem(PUSH_DISMISS_KEY, String(Date.now()));
+  } catch (_) {}
+  showPushPrompt.value = false;
+}
 
 /* ---------- modal ---------- */
 
