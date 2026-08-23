@@ -43,6 +43,20 @@
 
         <!-- Saved visits list (clickable → modal) -->
         <template v-else>
+          <!-- Push unsupported: explain why there's no live-update prompt -->
+          <div
+            v-if="pushUnavailableReason"
+            class="slide-down rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-[var(--bsu-ink-2)]"
+          >
+            {{ pushUnavailableReason }}
+            <button
+              type="button"
+              class="ml-1 font-semibold text-[var(--bsu-red)] underline underline-offset-2"
+              @click="hidePushHint = true"
+            >
+              Got it
+            </button>
+          </div>
           <button
             v-for="(visit, i) in saves"
             :key="visit.token"
@@ -312,6 +326,23 @@ const PUSH_DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // re-ask after a week, not
 
 const showPushPrompt = ref(false);
 const pushEnabling = ref(false);
+const hidePushHint = ref(false);
+
+// Truthful hint when live updates can't be offered in this browser at all
+// (e.g. iOS Safari outside an installed Home Screen web app).
+const isIOSDevice =
+  typeof navigator !== "undefined" &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
+const pushUnavailableReason = computed(() => {
+  if (!saves.value.length || hidePushHint.value) return "";
+  if (pushSupported()) return "";
+  if (isIOSDevice) {
+    return "Live updates need the site installed: open this page in Safari, tap Share, then \"Add to Home Screen\", and open it from there.";
+  }
+  return "This browser doesn't support push notifications, so live status updates are unavailable here.";
+});
 
 function pushDismissedRecently() {
   try {
