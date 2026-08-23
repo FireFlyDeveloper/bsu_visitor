@@ -227,7 +227,7 @@ function onScroll() {
 onMounted(() => {
   window.addEventListener("scroll", onScroll, { passive: true });
   if (!userStore.currentUser) {
-    userStore.fetchCurrentUser();
+    userStore.fetchCurrentUser().catch(() => null);
   }
 });
 

@@ -233,6 +233,9 @@ onMounted(() => {
     }
   })();
   tokenInput.value = fromQuery || stored;
+  // Arriving from registration (or a saved link) should show the visit
+  // immediately instead of making the visitor press "Check status" again.
+  if (tokenInput.value) lookup();
 });
 </script>
 

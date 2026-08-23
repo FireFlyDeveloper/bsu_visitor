@@ -85,6 +85,7 @@ export const useUserStore = defineStore("user", {
       } catch (error) {
         this.currentUser = null;
         this.error = error.message;
+        // Expected when logged out (401) — not an application error.
         return null;
       } finally {
         this.loading = false;

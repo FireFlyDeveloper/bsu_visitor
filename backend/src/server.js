@@ -7,6 +7,9 @@ import helmet from "helmet";
 
 import "./database/database.js";
 import "./database/createTableImport.js";
+// MVP tables (system_settings, visitor_access_tokens, push_subscriptions,
+// notification_events) — idempotent; must run before mvpRoutes are used.
+import "./database/migrateMvp.js";
 import authRoutes from "./routes/authRoutes.js";
 import visitorLogRoutes from "./routes/visitorLogRoutes.js";
 import visitorRoutes from "./routes/visitorRoutes.js";

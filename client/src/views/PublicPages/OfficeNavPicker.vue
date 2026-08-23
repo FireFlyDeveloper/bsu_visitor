@@ -144,7 +144,15 @@ const navigationOffices = computed(() =>
 async function load() {
   loading.value = true;
   try {
-    await officeStore.fetchOffices();
+    // Public AR picker must work logged-out — use the public directory
+    // endpoint, not the authed /offices list.
+    const res = await fetch(`${API_BASE}/public/directory`);
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      officeStore.offices = Array.isArray(data.offices) ? data.offices : [];
+    }
+  } catch (_) {
+    /* leave store as-is; AR routes still render with fallback status */
   } finally {
     loading.value = false;
   }
