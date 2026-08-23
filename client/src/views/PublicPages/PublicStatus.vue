@@ -62,8 +62,15 @@
               </span>
               <span class="mt-0.5 block truncate text-xs text-[var(--bsu-ink-2)]">
                 {{ visit.office || "Office pending" }}
-                <template v-if="visit.summaryLabel"> · {{ visit.summaryLabel }}</template>
               </span>
+            </span>
+            <!-- live visitor status -->
+            <span
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wide"
+              :class="statusMeta(visit).badge"
+            >
+              <span class="h-1.5 w-1.5 rounded-full" :class="statusMeta(visit).chip"></span>
+              {{ statusMeta(visit).label }}
             </span>
             <svg
               class="h-5 w-5 shrink-0 text-slate-300 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-[var(--bsu-red)]"
@@ -206,12 +213,12 @@ const status = ref({});
 
 function statusMeta(visit) {
   const s = (visit.summaryStatus || "").toLowerCase();
-  if (s === "pending") return { chip: "bg-amber-500", label: "In queue" };
-  if (s === "processing") return { chip: "bg-blue-500", label: "In progress" };
-  if (s === "completed") return { chip: "bg-emerald-500", label: "Awaiting sign-out" };
-  if (s === "left") return { chip: "bg-emerald-600", label: "Signed out" };
-  if (s === "rejected") return { chip: "bg-red-500", label: "Not accepted" };
-  return { chip: "bg-slate-400", label: "" };
+  if (s === "pending") return { chip: "bg-amber-500", badge: "bg-amber-50 text-amber-700", label: "Pending" };
+  if (s === "processing") return { chip: "bg-blue-500", badge: "bg-blue-50 text-blue-700", label: "Processing" };
+  if (s === "completed") return { chip: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700", label: "Completed" };
+  if (s === "left") return { chip: "bg-emerald-600", badge: "bg-emerald-50 text-emerald-700", label: "Completed" };
+  if (s === "rejected") return { chip: "bg-red-500", badge: "bg-red-50 text-red-700", label: "Not accepted" };
+  return { chip: "bg-slate-400", badge: "bg-slate-100 text-slate-600", label: "Checking…" };
 }
 
 async function refreshSummaries() {
@@ -298,10 +305,10 @@ const leftAt = computed(() => status.value.left_at);
 
 const statusLabel = computed(() => {
   switch (status.value.status) {
-    case "pending": return "In queue";
-    case "processing": return "In progress";
-    case "completed": return "Done — sign out";
-    case "left": return "Signed out";
+    case "pending": return "Pending";
+    case "processing": return "Processing";
+    case "completed": return "Completed — sign out at guard house";
+    case "left": return "Completed (signed out)";
     case "rejected": return "Not accepted";
     default: return status.value.status || "—";
   }
