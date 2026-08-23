@@ -113,7 +113,15 @@
               {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate font-semibold">{{ log.visitor_name }}</p>
+              <p class="flex items-center gap-2 truncate font-semibold">
+                <!-- Queue number mirrors what staff/visitor see elsewhere -->
+                <span
+                  class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-red-600 to-red-500 font-display text-xs font-bold tabular text-white shadow-sm"
+                  :title="`Queue #${log.queue_number}`"
+                  v-text="log.queue_number ?? '—'"
+                ></span>
+                {{ log.visitor_name }}
+              </p>
               <p class="truncate text-xs text-[var(--ink-3)]">
                 {{ log.purpose || "—" }} · {{ log.contact_number || "no contact" }}
               </p>
