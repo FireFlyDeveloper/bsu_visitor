@@ -42,6 +42,8 @@ app.use(helmet());
 const configuredClientUrl = process.env.CLIENT_URL?.trim();
 const extraClientOrigins = process.env.CLIENT_EXTRA_ORIGINS?.trim();
 const vitePort = Number(process.env.VITE_PORT || 5173);
+// HTTPS dev instances (camera testing) run on their own port.
+const viteHttpsPort = Number(process.env.VITE_HTTPS_PORT || 5174);
 const lanHosts = Object.values(os.networkInterfaces())
   .flat()
   .filter((network) => network && network.family === "IPv4" && !network.internal && !/^(docker|veth|br-)/.test(network.address))
@@ -51,6 +53,12 @@ const defaultDevelopmentOrigins = [
   `http://127.0.0.1:${vitePort}`,
   `http://192.168.8.41:${vitePort}`,
   ...lanHosts.map((host) => `http://${host}:${vitePort}`),
+  // Camera testing needs a secure context: allow the HTTPS dev origin too
+  // (same hostnames, https scheme, dedicated port).
+  `https://localhost:${viteHttpsPort}`,
+  `https://127.0.0.1:${viteHttpsPort}`,
+  `https://192.168.8.41:${viteHttpsPort}`,
+  ...lanHosts.map((host) => `https://${host}:${viteHttpsPort}`),
 ];
 const normalizeOrigin = (origin) => {
   try {
