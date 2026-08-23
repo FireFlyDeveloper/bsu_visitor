@@ -137,10 +137,13 @@ class VisitLog {
   }
 
   static findActiveVisits() {
+    // Only completed visits await guard sign-out. Pending/processing visits
+    // belong to the office queue — marking them left would be rejected.
     const stmt = db.prepare(`
-      SELECT *
+      SELECT *,
+        (status = 'completed') AS can_sign_out
       FROM visit_logs
-      WHERE left_at IS NULL
+      WHERE left_at IS NULL AND status IN ('pending', 'processing', 'completed')
       ORDER BY time_in DESC
     `);
     return stmt.all();

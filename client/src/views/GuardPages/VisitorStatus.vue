@@ -164,9 +164,25 @@
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button
+                    v-if="log.status === 'completed'"
                     class="btn btn-secondary btn-sm"
+                    :disabled="signingOut === log.id"
                     @click="markAsLeft(log)"
-                  >Mark left</button>
+                  >{{ signingOut === log.id ? "…" : "Mark left" }}</button>
+                  <span
+                    v-else-if="log.status === 'pending'"
+                    class="text-xs font-semibold uppercase tracking-wide text-[var(--ink-3)]"
+                    title="The office has not accepted this visitor yet"
+                  >
+                    Awaiting office
+                  </span>
+                  <span
+                    v-else
+                    class="text-xs font-semibold uppercase tracking-wide text-amber-600"
+                    title="The office is still processing this visit"
+                  >
+                    In progress
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -272,7 +288,8 @@ async function onSignOut(log) {
     await pollOverdue();
     await store.fetchActiveVisitors();
   } catch (err) {
-    toast.error("Sign-out failed");
+    // Surface the backend's reason (e.g. "office has not marked this visit done").
+    toast.error(err?.message || "Sign-out failed");
   } finally {
     signingOut.value = null;
   }
