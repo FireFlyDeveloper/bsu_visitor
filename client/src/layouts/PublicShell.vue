@@ -10,7 +10,13 @@
       </nav>
       <router-link to="/login" class="public-shell__login">Sign in</router-link>
     </header>
-    <main><router-view /></main>
+    <main>
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in" appear>
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
   </div>
 </template>
 

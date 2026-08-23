@@ -85,6 +85,7 @@
 
       <!-- Status detail modal -->
       <Teleport to="body">
+        <Transition name="modal">
         <div
           v-if="selected"
           class="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
@@ -172,6 +173,7 @@
             </template>
           </div>
         </div>
+        </Transition>
       </Teleport>
 
       <footer class="mt-8 text-center text-xs leading-5 text-[var(--bsu-ink-3)]">

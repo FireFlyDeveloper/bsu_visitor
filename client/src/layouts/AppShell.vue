@@ -46,7 +46,13 @@
         <span class="app-shell__mobile-title">{{ currentTitle }}</span>
         <span class="app-shell__mobile-role">{{ roleNames[roleKey] }}</span>
       </header>
-      <main class="app-shell__main"><router-view /></main>
+      <main class="app-shell__main">
+        <router-view v-slot="{ Component }">
+          <transition name="page" mode="out-in" appear>
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
     </div>
     <Toast />
     <SecurityAlarmWidget v-if="showSecurityAlarm" />

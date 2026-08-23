@@ -285,6 +285,107 @@
 }
 .pulse-soft { animation: pulse-soft 2s var(--ease-out-soft) infinite; }
 
+/* ----------------------------------------------------------------
+   Page transitions (router)
+   ---------------------------------------------------------------- */
+.page-enter-active {
+  transition: opacity 260ms var(--ease-out-soft),
+              transform 260ms var(--ease-out-soft);
+}
+.page-leave-active {
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.995);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* ----------------------------------------------------------------
+   Micro-interactions
+   ---------------------------------------------------------------- */
+/* Buttons & cards: gentle press feedback everywhere. */
+button:not(:disabled),
+.btn,
+[role="button"] {
+  transition: transform 120ms var(--ease-out-soft),
+              box-shadow 160ms var(--ease-out-soft);
+}
+button:not(:disabled):active,
+.btn:not(:disabled):active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* Interactive cards lift slightly on hover when they opt in. */
+.hover-lift {
+  transition: transform 200ms var(--ease-out-soft),
+              box-shadow 200ms var(--ease-out-soft);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.10));
+}
+
+/* ----------------------------------------------------------------
+   Modal / overlay transitions
+   ---------------------------------------------------------------- */
+@keyframes modal-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.modal-enter-active { animation: modal-pop 220ms var(--ease-out-soft); }
+.modal-leave-active { transition: opacity 150ms ease, transform 150ms ease; }
+.modal-leave-to     { opacity: 0; transform: translateY(8px) scale(0.99); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 180ms ease; }
+.fade-enter-from, .fade-leave-to       { opacity: 0; }
+
+@keyframes overlay-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ----------------------------------------------------------------
+   Feedback animations
+   ---------------------------------------------------------------- */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+.shake { animation: shake-x 380ms var(--ease-out-soft); }
+
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.6); }
+  70%  { transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.pop-in { animation: pop-in 320ms var(--ease-out-soft) both; }
+
+/* Slide-down for inline alerts / banners. */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-down { animation: slide-down 240ms var(--ease-out-soft) both; }
+
+/* Respect users who prefer reduced motion — kill all decorative motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--bsu-red);
   outline-offset: 2px;
