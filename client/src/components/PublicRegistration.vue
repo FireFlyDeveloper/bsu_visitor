@@ -423,11 +423,18 @@ async function onSubmit() {
       typeof data.queue_position === "number" ? data.queue_position : null;
     alreadyRegistered.value = !!data.already_registered;
 
-    // Persist the opaque token in a long-lived cookie so the /status page can
-    // find this visit later — even after closing the browser. Only this
-    // device holds the raw token; the backend stores only its hash.
+    // Persist the opaque token in the visitor's one-day cookie list so the
+    // /status page can list every person they registered today. Only this
+    // device holds the raw tokens; the backend stores only hashes.
     if (token.value) {
-      saveVisitorToken(token.value);
+      saveVisitorToken({
+        token: token.value,
+        reference: referenceNumber.value,
+        office:
+          (props.office && props.office.office_name) ||
+          data.office?.office_name ||
+          "",
+      });
     }
     submitted.value = true;
     emit("submitted");

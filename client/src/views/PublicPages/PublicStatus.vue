@@ -9,127 +9,174 @@
           Visit status
         </div>
         <h1 class="font-display mt-4 text-3xl font-bold tracking-tight">
-          Check your visit
+          Your visits today
         </h1>
         <p class="mt-1 text-sm text-[var(--bsu-ink-2)]">
-          Enter the reference shown on your registration screen to see your
-          queue position and exit deadline.
+          Everyone you registered on this device. Tap a visit to see its
+          status.
         </p>
       </header>
 
-      <main class="mt-8 flex-1">
-        <!-- Token entry -->
-        <form
-          v-if="!loaded"
-          class="rounded-3xl border border-[var(--bsu-line)] bg-white p-6 shadow-sm"
-          @submit.prevent="lookup"
+      <main class="mt-8 flex-1 space-y-3">
+        <!-- Loading -->
+        <div v-if="loadingInitial" class="space-y-3">
+          <div v-for="i in Math.max(saves.length, 1)" :key="i" class="h-20 animate-pulse rounded-3xl border border-[var(--bsu-line)] bg-white" />
+        </div>
+
+        <!-- Empty state -->
+        <div
+          v-else-if="!saves.length && !route.query.token"
+          class="rounded-3xl border border-dashed border-[var(--bsu-line)] bg-white p-8 text-center"
         >
-          <label class="block">
-            <span class="form-label">Reference number or token</span>
-            <input
-              v-model="tokenInput"
-              type="text"
-              class="form-input"
-              placeholder="Paste your token or reference here"
-              required
-              autocomplete="off"
-            />
-          </label>
-          <p v-if="error" class="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {{ error }}
+          <p class="font-display text-lg font-bold">No saved visits</p>
+          <p class="mt-2 text-sm leading-6 text-[var(--bsu-ink-2)]">
+            This device has no visit registrations yet. Register at an office,
+            and your visits will appear here for the rest of the day.
           </p>
-          <button
-            type="submit"
-            :disabled="lookingUp"
-            class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--bsu-red)] px-5 py-3.5 text-base font-bold text-white shadow-lg transition-transform hover:scale-[1.01] hover:bg-[#a30e22] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <span v-if="lookingUp" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            {{ lookingUp ? "Checking…" : "Check status" }}
-          </button>
           <router-link
             to="/register"
-            class="mt-3 block text-center text-sm font-semibold text-[var(--bsu-red)] hover:underline"
+            class="mt-5 inline-flex items-center justify-center rounded-xl bg-[var(--bsu-red)] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#a30e22]"
           >
-            Haven't registered yet? Register here →
+            Register a visit →
           </router-link>
-        </form>
+        </div>
 
-        <!-- Result -->
-        <div v-else class="space-y-4">
-          <div class="rounded-3xl border border-[var(--bsu-line)] bg-white p-6 shadow-sm">
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <p class="text-xs uppercase tracking-wider text-[var(--bsu-ink-3)]">Status</p>
-                <p class="mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold" :class="badgeClass">
+        <!-- Saved visits list (clickable → modal) -->
+        <template v-else>
+          <button
+            v-for="(visit, i) in saves"
+            :key="visit.token"
+            type="button"
+            class="group flex w-full items-center gap-4 rounded-3xl border bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            :class="selected?.token === visit.token ? 'border-[var(--bsu-red)]' : 'border-[var(--bsu-line)]'"
+            @click="openVisit(visit)"
+          >
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl font-display text-sm font-bold tabular text-white"
+              :class="statusMeta(visit).chip"
+              v-text="i + 1"
+            ></span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-display text-base font-bold tracking-tight">
+                {{ visit.reference || "Visit " + (i + 1) }}
+              </span>
+              <span class="mt-0.5 block truncate text-xs text-[var(--bsu-ink-2)]">
+                {{ visit.office || "Office pending" }}
+                <template v-if="visit.summaryLabel"> · {{ visit.summaryLabel }}</template>
+              </span>
+            </span>
+            <svg
+              class="h-5 w-5 shrink-0 text-slate-300 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-[var(--bsu-red)]"
+              fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m9 5 7 7-7 7" />
+            </svg>
+          </button>
+
+          <router-link
+            to="/register"
+            class="mt-2 block rounded-3xl border border-dashed border-[var(--bsu-line)] p-4 text-center text-sm font-semibold text-[var(--bsu-red)] transition hover:bg-white"
+          >
+            + Register another person
+          </router-link>
+        </template>
+      </main>
+
+      <!-- Status detail modal -->
+      <Teleport to="body">
+        <div
+          v-if="selected"
+          class="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
+          @click.self="closeModal"
+        >
+          <div class="relative max-h-[88dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl sm:p-8">
+            <button
+              type="button"
+              class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Close"
+              @click="closeModal"
+            >
+              ✕
+            </button>
+
+            <!-- loading this token -->
+            <div v-if="modalLoading" class="space-y-3 py-6">
+              <div class="h-16 animate-pulse rounded-2xl bg-slate-100" />
+              <div class="h-10 animate-pulse rounded-2xl bg-slate-100" />
+            </div>
+
+            <!-- lookup error -->
+            <div v-else-if="modalError" class="py-6 text-center">
+              <p class="text-sm font-semibold text-red-700">{{ modalError }}</p>
+              <p class="mt-2 text-xs text-slate-500">This visit may have expired from this device's saved list.</p>
+            </div>
+
+            <!-- detail -->
+            <template v-else>
+              <p class="eyebrow text-[0.65rem] font-bold uppercase tracking-widest text-[var(--bsu-red)]">Visit status</p>
+              <div class="mt-2 flex items-start justify-between gap-4">
+                <p class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-bold" :class="badgeClass">
                   <span class="h-2 w-2 rounded-full" :class="dotClass"></span>
                   {{ statusLabel }}
                 </p>
+                <p v-if="referenceNumber" class="text-right">
+                  <span class="block text-[0.65rem] uppercase tracking-wider text-[var(--bsu-ink-3)]">Reference</span>
+                  <span class="font-display text-lg font-bold tabular">{{ referenceNumber }}</span>
+                </p>
               </div>
-              <div v-if="referenceNumber" class="text-right">
-                <p class="text-xs uppercase tracking-wider text-[var(--bsu-ink-3)]">Reference</p>
-                <p class="font-display mt-1 text-lg font-bold tabular tracking-tight">{{ referenceNumber }}</p>
+
+              <p v-if="office" class="mt-4 text-sm text-[var(--bsu-ink-2)]">
+                Visiting
+                <span class="font-bold uppercase tracking-wide">{{ office.office_name }}</span>
+              </p>
+
+              <div v-if="queuePosition" class="mt-5 rounded-2xl border-2 border-[var(--bsu-red)]/30 bg-[var(--bsu-red-soft)] p-4 text-center">
+                <p class="text-xs uppercase tracking-wider text-[var(--bsu-ink-2)]">Your queue position</p>
+                <p class="font-display mt-1 text-4xl font-bold tabular text-[var(--bsu-red)]">#{{ queuePosition }}</p>
               </div>
-            </div>
 
-            <p v-if="office" class="mt-4 text-sm text-[var(--bsu-ink-2)]">
-              Visiting
-              <span class="font-bold uppercase tracking-wide text-[var(--bsu-ink)]">{{ office.office_name }}</span>
-            </p>
+              <div class="mt-4 grid grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-[var(--bsu-line)] p-4">
+                  <p class="text-[0.65rem] uppercase tracking-wider text-[var(--bsu-ink-3)]">Time in</p>
+                  <p class="mt-1 font-semibold">{{ formatServerTime(status.time_in) }}</p>
+                </div>
+                <div class="rounded-2xl border border-[var(--bsu-line)] p-4">
+                  <p class="text-[0.65rem] uppercase tracking-wider text-[var(--bsu-ink-3)]">Time out</p>
+                  <p class="mt-1 font-semibold">{{ formatServerTime(status.time_out) }}</p>
+                </div>
+              </div>
 
-            <div v-if="queuePosition" class="mt-5 rounded-2xl border-2 border-[var(--bsu-red)]/30 bg-[var(--bsu-red-soft)] p-4 text-center">
-              <p class="text-xs uppercase tracking-wider text-[var(--bsu-ink-2)]">Your queue position</p>
-              <p class="font-display mt-1 text-4xl font-bold tabular text-[var(--bsu-red)]">#{{ queuePosition }}</p>
-            </div>
+              <div
+                v-if="exitDeadline"
+                class="mt-3 rounded-2xl border p-4"
+                :class="isOverdue ? 'border-red-300 bg-red-50' : 'border-[var(--bsu-line)]'"
+              >
+                <p class="text-[0.65rem] uppercase tracking-wider" :class="isOverdue ? 'text-red-700' : 'text-[var(--bsu-ink-3)]'">
+                  Exit deadline
+                </p>
+                <p class="mt-1 font-semibold" :class="isOverdue ? 'text-red-700' : ''">
+                  {{ formatServerDateTime(exitDeadline) }}
+                  <span v-if="isOverdue" class="ml-2 rounded-full bg-red-600 px-2 py-0.5 text-[0.65rem] font-bold text-white">Overdue</span>
+                </p>
+                <p class="mt-2 text-xs leading-5 text-[var(--bsu-ink-2)]">
+                  {{ isOverdue
+                    ? "Please head to the guard house to sign out before leaving campus."
+                    : "Completed visits must be signed out at the guard house by this time." }}
+                </p>
+              </div>
+
+              <p v-if="leftAt" class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+                Signed out at {{ formatServerDateTime(leftAt) }}. Thank you for visiting!
+              </p>
+            </template>
           </div>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="rounded-3xl border border-[var(--bsu-line)] bg-white p-5 shadow-sm">
-              <p class="text-xs uppercase tracking-wider text-[var(--bsu-ink-3)]">Time in</p>
-              <p class="mt-1 text-lg font-semibold">{{ formatServerTime(status.time_in) }}</p>
-            </div>
-            <div class="rounded-3xl border border-[var(--bsu-line)] bg-white p-5 shadow-sm">
-              <p class="text-xs uppercase tracking-wider text-[var(--bsu-ink-3)]">Visited at</p>
-              <p class="mt-1 text-lg font-semibold">{{ formatServerTime(status.time_out) }}</p>
-            </div>
-          </div>
-
-          <div
-            v-if="exitDeadline"
-            class="rounded-3xl border p-5 shadow-sm"
-            :class="isOverdue ? 'border-red-300 bg-red-50' : 'border-[var(--bsu-line)] bg-white'"
-          >
-            <p class="text-xs uppercase tracking-wider" :class="isOverdue ? 'text-red-700' : 'text-[var(--bsu-ink-3)]'">
-              Exit deadline
-            </p>
-            <p class="mt-1 text-lg font-semibold" :class="isOverdue ? 'text-red-700' : ''">
-              {{ formatServerDateTime(exitDeadline) }}
-              <span v-if="isOverdue" class="ml-2 rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white">Overdue</span>
-            </p>
-            <p v-if="isOverdue" class="mt-2 text-sm text-red-700">
-              Please head to the guard house to sign out before leaving campus.
-            </p>
-            <p v-else class="mt-2 text-sm text-[var(--bsu-ink-2)]">
-              Your completed visit must be signed out at the guard house by this time.
-            </p>
-          </div>
-
-          <p v-if="leftAt" class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm font-semibold text-emerald-800">
-            Signed out at {{ formatServerDateTime(leftAt) }}. Thank you for visiting!
-          </p>
-
-          <button
-            type="button"
-            @click="reset"
-            class="w-full rounded-xl border-2 border-[var(--bsu-line)] px-4 py-3 text-sm font-bold text-[var(--bsu-ink-2)] transition hover:bg-white"
-          >
-            Check another visit
-          </button>
         </div>
-      </main>
+      </Teleport>
 
       <footer class="mt-8 text-center text-xs leading-5 text-[var(--bsu-ink-3)]">
-        Personal details are never displayed on this page. This page only shows
-        your reference number, queue position, and exit deadline.
+        Personal details are never displayed here — only reference numbers,
+        queue positions, and exit deadlines.
       </footer>
     </div>
   </div>
@@ -140,35 +187,120 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { Search } from "@lucide/vue";
 import { formatServerTime, formatServerDateTime, parseServerDate } from "@/utils/dateTime";
-import { readVisitorToken } from "@/utils/visitorToken";
+import { getVisitorTokens, saveVisitorToken } from "@/utils/visitorToken";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
-
 const route = useRoute();
-const tokenInput = ref("");
-const lookingUp = ref(false);
-const loaded = ref(false);
-const error = ref("");
+
+const saves = ref([]);
+const loadingInitial = ref(true);
+
+const selected = ref(null);
+const modalLoading = ref(false);
+const modalError = ref("");
 const status = ref({});
 
-const refToken = computed(() => tokenInput.value.trim());
+/* ---------- list ---------- */
+
+function statusMeta(visit) {
+  const s = (visit.summaryStatus || "").toLowerCase();
+  if (s === "pending") return { chip: "bg-amber-500", label: "In queue" };
+  if (s === "processing") return { chip: "bg-blue-500", label: "In progress" };
+  if (s === "completed") return { chip: "bg-emerald-500", label: "Awaiting sign-out" };
+  if (s === "left") return { chip: "bg-emerald-600", label: "Signed out" };
+  if (s === "rejected") return { chip: "bg-red-500", label: "Not accepted" };
+  return { chip: "bg-slate-400", label: "" };
+}
+
+async function refreshSummaries() {
+  // Fetch each saved visit quietly so the list shows live status labels.
+  await Promise.all(
+    saves.value.map(async (visit) => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/public/status/${encodeURIComponent(visit.token)}`,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        visit.summaryStatus = data.status;
+        visit.office =
+          data.office?.office_name ||
+          visit.office ||
+          "";
+      } catch (_) {
+        /* keep last known summary */
+      }
+    }),
+  );
+}
+
+onMounted(async () => {
+  saves.value = getVisitorTokens();
+
+  const deepLink = String(route.query.token || "").trim();
+  if (deepLink) {
+    // Deep links still work: make sure the linked visit is in the list, then open it.
+    let entry = saves.value.find((v) => v.token === deepLink);
+    if (!entry) {
+      entry = { token: deepLink, reference: "", office: "", at: Date.now() };
+      saveVisitorToken(entry);
+      saves.value = getVisitorTokens();
+    }
+    openVisit(entry);
+  }
+
+  await refreshSummaries();
+  loadingInitial.value = false;
+});
+
+/* ---------- modal ---------- */
+
+async function openVisit(visit) {
+  selected.value = visit;
+  modalLoading.value = true;
+  modalError.value = "";
+  status.value = {};
+  try {
+    const res = await fetch(
+      `${API_BASE}/public/status/${encodeURIComponent(visit.token)}`,
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      modalError.value = data.error || "Visit not found.";
+      return;
+    }
+    status.value = data;
+  } catch (_) {
+    modalError.value = "Network error. Please check your connection.";
+  } finally {
+    modalLoading.value = false;
+  }
+}
+
+function closeModal() {
+  selected.value = null;
+  status.value = {};
+  modalError.value = "";
+}
+
+/* ---------- detail helpers ---------- */
+
 const referenceNumber = computed(() => status.value.reference_number || "");
 const office = computed(() => status.value.office || null);
 const queuePosition = computed(() => status.value.queue_position || null);
-const exitDeadline = computed(() => status.value.exit_deadline || "");
-const leftAt = computed(() => status.value.left_at || "");
-const isOverdue = computed(() => {
-  const deadline = parseServerDate(exitDeadline.value);
-  return !!deadline && deadline.getTime() < Date.now();
-});
+const exitDeadline = computed(() =>
+  parseServerDate(status.value.exit_deadline),
+);
+const isOverdue = computed(() => Boolean(status.value.overdue));
+const leftAt = computed(() => status.value.left_at);
 
 const statusLabel = computed(() => {
   switch (status.value.status) {
     case "pending": return "In queue";
-    case "processing": return "With the office";
-    case "completed": return "Visit finished";
-    case "rejected": return "Not admitted";
+    case "processing": return "In progress";
+    case "completed": return "Done — sign out";
     case "left": return "Signed out";
+    case "rejected": return "Not accepted";
     default: return status.value.status || "—";
   }
 });
@@ -194,71 +326,10 @@ const dotClass = computed(() => {
     default: return "bg-slate-400";
   }
 });
-
-async function lookup() {
-  if (!refToken.value) return;
-  error.value = "";
-  lookingUp.value = true;
-  try {
-    const res = await fetch(
-      `${API_BASE}/public/status/${encodeURIComponent(refToken.value)}`,
-    );
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      error.value = data.error || "Visit not found. Check your token and try again.";
-      return;
-    }
-    status.value = data;
-    loaded.value = true;
-  } catch (e) {
-    error.value = "Network error. Please check your connection.";
-  } finally {
-    lookingUp.value = false;
-  }
-}
-
-function reset() {
-  loaded.value = false;
-  error.value = "";
-  status.value = {};
-  tokenInput.value = "";
-}
-
-onMounted(() => {
-  const fromQuery = String(route.query.token || "").trim();
-  // Prefer an explicit ?token= link, then fall back to the visitor's saved
-  // cookie from their most recent registration.
-  tokenInput.value = fromQuery || readVisitorToken();
-  // Arriving from registration (or a saved link) should show the visit
-  // immediately instead of making the visitor press "Check status" again.
-  if (tokenInput.value) lookup();
-});
 </script>
 
 <style scoped>
 .font-display {
   font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-}
-.form-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--bsu-ink-2);
-  margin-bottom: 0.35rem;
-}
-.form-input {
-  width: 100%;
-  border-radius: 0.6rem;
-  border: 2px solid #e2e8f0;
-  background: #f8fafc;
-  padding: 0.7rem 0.9rem;
-  font-size: 0.95rem;
-  color: var(--bsu-ink);
-  outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.form-input:focus {
-  border-color: var(--bsu-red);
-  background: #fff;
 }
 </style>
