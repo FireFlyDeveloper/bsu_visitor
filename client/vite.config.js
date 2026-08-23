@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import fs from "node:fs";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +36,23 @@ export default defineConfig(({ mode }) => {
       allowedHosts,
       host: "0.0.0.0",
       port,
+      // HTTPS is opt-in for camera testing (getUserMedia requires a secure
+      // context on non-localhost hosts). Start dev with:
+      //   VITE_HTTPS=true npm run dev
+      ...(process.env.VITE_HTTPS === "true"
+        ? {
+            https: {
+              key: fs.readFileSync(
+                process.env.VITE_HTTPS_KEY ||
+                  path.resolve(__dirname, "../.certs/homelab.local+2-key.pem"),
+              ),
+              cert: fs.readFileSync(
+                process.env.VITE_HTTPS_CERT ||
+                  path.resolve(__dirname, "../.certs/homelab.local+2.pem"),
+              ),
+            },
+          }
+        : {}),
       proxy: {
         "/api": {
           // Override in client/.env:  VITE_API_PROXY_TARGET=http://192.168.1.5:8765
