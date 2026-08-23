@@ -391,7 +391,17 @@ class VisitLog {
         v.contact_number,
         v.address AS visitor_address,
         COALESCE(l.visitor_img, v.img) AS visitor_img,
-        o.office_name
+        o.office_name,
+        -- Queue number mirrors the visitor-facing queuePosition(): earlier
+        -- pending/processing visits at the same office, plus this one.
+        (
+          SELECT COUNT(*) + 1
+          FROM visit_logs q
+          WHERE q.office_id = l.office_id
+            AND q.status IN ('pending', 'processing')
+            AND q.left_at IS NULL
+            AND q.id < l.id
+        ) AS queue_number
       FROM visit_logs l
       JOIN visitors v ON v.id = l.visitor_id
       JOIN offices o ON o.id = l.office_id

@@ -158,6 +158,12 @@
             >
               <td class="px-6 py-3.5">
                 <div class="flex items-center gap-3">
+                  <!-- Queue number: matches the number shown to the visitor -->
+                  <span
+                    class="w-8 h-8 shrink-0 rounded-xl bg-linear-to-br from-red-600 to-red-500 text-white flex items-center justify-center font-display text-sm font-bold tabular shadow-sm"
+                    :title="`Queue #${log.queue_number}`"
+                    v-text="log.queue_number ?? '—'"
+                  ></span>
                   <div
                     class="w-8 h-8 rounded-full bg-linear-to-br from-red-100 to-red-50 flex items-center justify-center"
                   >

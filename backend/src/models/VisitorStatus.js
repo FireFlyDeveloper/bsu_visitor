@@ -61,6 +61,45 @@ class VisitorStatus {
     return result.changes;
   }
 
+  // Global (admin) variant: all offices, same queue-number projection.
+  static findByStatus({ status, limit = 20, offset = 0 }) {
+    if (!status) throw new Error("status is required");
+
+    const rows = db
+      .prepare(
+        `
+    SELECT
+      l.*,
+      v.fullname AS visitor_name,
+      v.contact_number,
+      v.address AS visitor_address,
+      COALESCE(l.visitor_img, v.img) AS visitor_img,
+      o.office_name,
+      (
+        SELECT COUNT(*) + 1
+        FROM visit_logs q
+        WHERE q.office_id = l.office_id
+          AND q.status IN ('pending', 'processing')
+          AND q.left_at IS NULL
+          AND q.id < l.id
+      ) AS queue_number
+    FROM visit_logs l
+    JOIN visitors v ON v.id = l.visitor_id
+    JOIN offices o ON o.id = l.office_id
+    WHERE l.status = ?
+    ORDER BY l.time_in DESC
+    LIMIT ? OFFSET ?
+  `,
+      )
+      .all(status, limit, offset);
+
+    const total = db
+      .prepare(`SELECT COUNT(*) AS total FROM visit_logs WHERE status = ?`)
+      .get(status).total;
+
+    return { rows, total };
+  }
+
   static findByStatusAndOffice({ userId, status, limit = 20, offset = 0 }) {
     if (!userId) throw new Error("userId is required");
     if (!status) throw new Error("status is required");
@@ -74,7 +113,17 @@ class VisitorStatus {
       v.contact_number,
       v.address AS visitor_address,
       COALESCE(l.visitor_img, v.img) AS visitor_img,
-      o.office_name
+      o.office_name,
+      -- Queue number mirrors the visitor-facing queuePosition(): earlier
+      -- pending/processing visits at the same office, plus this one.
+      (
+        SELECT COUNT(*) + 1
+        FROM visit_logs q
+        WHERE q.office_id = l.office_id
+          AND q.status IN ('pending', 'processing')
+          AND q.left_at IS NULL
+          AND q.id < l.id
+      ) AS queue_number
     FROM visit_logs l
     JOIN visitors v ON v.id = l.visitor_id
     JOIN offices o ON o.id = l.office_id
