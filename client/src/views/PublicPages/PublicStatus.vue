@@ -339,7 +339,7 @@ const pushUnavailableReason = computed(() => {
   if (!saves.value.length || hidePushHint.value) return "";
   if (pushSupported()) return "";
   if (isIOSDevice) {
-    return "Live updates need the site installed: open this page in Safari, tap Share, then \"Add to Home Screen\", and open it from there.";
+    return "For iPhone users: live updates need the site installed. Open this page in Safari, tap the Share button, choose \"Add to Home Screen\", then open BSU Visitor from your Home Screen.";
   }
   return "This browser doesn't support push notifications, so live status updates are unavailable here.";
 });
