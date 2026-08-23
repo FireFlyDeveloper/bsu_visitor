@@ -255,6 +255,7 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { saveVisitorToken } from "@/utils/visitorToken";
 
 const props = defineProps({
   office: { type: Object, default: null },
@@ -422,14 +423,11 @@ async function onSubmit() {
       typeof data.queue_position === "number" ? data.queue_position : null;
     alreadyRegistered.value = !!data.already_registered;
 
-    // Hold the opaque token locally so the /status page can prefill it.
-    // Only this device can look up the visit; the backend stores only a hash.
+    // Persist the opaque token in a long-lived cookie so the /status page can
+    // find this visit later — even after closing the browser. Only this
+    // device holds the raw token; the backend stores only its hash.
     if (token.value) {
-      try {
-        sessionStorage.setItem("bsu_visitor_token", token.value);
-      } catch (_) {
-        /* storage unavailable — non-fatal */
-      }
+      saveVisitorToken(token.value);
     }
     submitted.value = true;
     emit("submitted");

@@ -140,6 +140,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { Search } from "@lucide/vue";
 import { formatServerTime, formatServerDateTime, parseServerDate } from "@/utils/dateTime";
+import { readVisitorToken } from "@/utils/visitorToken";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
@@ -225,14 +226,9 @@ function reset() {
 
 onMounted(() => {
   const fromQuery = String(route.query.token || "").trim();
-  const stored = (() => {
-    try {
-      return sessionStorage.getItem("bsu_visitor_token") || "";
-    } catch (_) {
-      return "";
-    }
-  })();
-  tokenInput.value = fromQuery || stored;
+  // Prefer an explicit ?token= link, then fall back to the visitor's saved
+  // cookie from their most recent registration.
+  tokenInput.value = fromQuery || readVisitorToken();
   // Arriving from registration (or a saved link) should show the visit
   // immediately instead of making the visitor press "Check status" again.
   if (tokenInput.value) lookup();
