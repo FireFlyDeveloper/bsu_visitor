@@ -105,18 +105,37 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { ArrowRight, Building2, Camera, ClipboardList, Clock, Search } from "@lucide/vue";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 const offices = ref([]);
 const occupancy = ref(0);
 const loading = ref(true);
+let pollTimer = null;
 
 function capitalizeName(name) {
   return name ? name.charAt(0).toUpperCase() + name.slice(1) : name;
 }
+
+async function loadDirectory() {
+  try {
+    const response = await fetch(`${API_BASE}/public/directory`);
+    const data = await response.json();
+    offices.value = data.offices || [];
+    occupancy.value = data.occupancy?.active_visitors || 0;
+  } finally {
+    loading.value = false;
+  }
+}
+
 onMounted(async () => {
-  try { const response = await fetch(`${API_BASE}/public/directory`); const data = await response.json(); offices.value = data.offices || []; occupancy.value = data.occupancy?.active_visitors || 0; } finally { loading.value = false; }
+  await loadDirectory();
+  // Keep the LIVE badge honest: refresh occupancy + queue counts every 30s.
+  pollTimer = setInterval(loadDirectory, 30_000);
+});
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer);
 });
 </script>

@@ -1,6 +1,7 @@
 import db from "../database/database.js";
 import VisitLog from "../models/VisitLog.js";
 import Visitor from "../models/Visitor.js";
+import { pushToAudience } from "../services/pushService.js";
 import {
   generateOpaqueToken,
   hashToken,
@@ -99,7 +100,23 @@ class PublicController {
            ORDER BY o.office_name`,
         )
         .all();
-      return res.json({ offices: rows });
+
+      // Campus-wide occupancy: everyone currently in the visiting flow who
+      // has not signed out. Same criteria as the per-office queue_count, so
+      // this equals the sum of the queues shown below it.
+      const occupancy = db
+        .prepare(
+          `SELECT COUNT(*) AS active_visitors
+           FROM visit_logs
+           WHERE status IN ('pending', 'processing')
+             AND left_at IS NULL`,
+        )
+        .get();
+
+      return res.json({
+        offices: rows,
+        occupancy: { active_visitors: occupancy.active_visitors },
+      });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -194,12 +211,26 @@ class PublicController {
         registrationSource: "self",
       });
 
+      const queuePosition = VisitLog.queuePosition(officeId, logId);
+      const visitorName = visitor.fullname || "A visitor";
+
+      // Fire-and-forget: alert the office's staff that a new visitor joined.
+      pushToAudience("office", {
+        officeId,
+        notification: {
+          title: "New visitor",
+          body: `${visitorName} joined the ${office.office_name} queue (#${queuePosition}).`,
+          tag: `new-visitor-${logId}`,
+        },
+        data: { type: "new_visitor", visit_log_id: logId },
+      }).catch((err) => console.error("push notify failed:", err.message));
+
       return res.status(201).json({
         ok: true,
         already_registered: false,
         token,
         reference_number: referenceNumber,
-        queue_position: VisitLog.queuePosition(officeId, logId),
+        queue_position: queuePosition,
         office: { id: office.id, office_name: office.office_name },
       });
     } catch (err) {
