@@ -1,0 +1,93 @@
+# BSU Visitor — parallel v2 demo stack
+#
+# Runs ALONGSIDE the original production stack (docker-compose.yml, project
+# `bsu_visitor` on :8080/:8443) so both versions can be presented side by side.
+#
+# Isolation from the old stack:
+#   - separate compose project name (bsu_visitor_v2) → own network/containers
+#   - distinct container names (*-v2) and image tags (:v2)
+#   - fresh data volumes (v2-data / v2-uploads) — the production SQLite DB and
+#     uploads are NOT shared or modified; seed offices/users after first start:
+#       docker exec bsu-visitor-v2-backend node src/database/seed.js
+#   - only public port is 8081 → Caddy :80 inside (plain HTTP, TLS_OFF)
+#
+# Usage:
+#   docker compose -p bsu_visitor_v2 -f docker-compose.v2.yml build frontend backend
+#   docker compose -p bsu_visitor_v2 -f docker-compose.v2.yml build proxy
+#   docker compose -p bsu_visitor_v2 -f docker-compose.v2.yml up -d
+
+name: bsu_visitor_v2
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: bsu-visitor-backend:v2
+    container_name: bsu-visitor-v2-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8765
+      # Demo-stack secret, independent of the production stack.
+      JWT_SECRET: ${V2_JWT_SECRET:-change-me-in-demo-v2}
+      JWT_EXPIRY: 24h
+      MULTISET_CLIENT_ID: ${MULTISET_CLIENT_ID:-}
+      MULTISET_CLIENT_SECRET: ${MULTISET_CLIENT_SECRET:-}
+      MULTISET_MAP_CODE: ${MULTISET_MAP_CODE:-MAP_GCEL3WD6ACQL}
+      DATABASE_PATH: /app/data/database.db
+      CLIENT_URL: ${V2_CLIENT_URL:-http://localhost:8081,http://homelab.local:8081}
+    volumes:
+      - v2-data:/app/data
+      - v2-uploads:/app/uploads
+    expose:
+      - "8765"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8765/api/public-home/offices').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE: /api
+    image: bsu-visitor-frontend:v2
+    container_name: bsu-visitor-v2-frontend
+    restart: unless-stopped
+    expose:
+      - "5173"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5173/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+      args:
+        TLS_OFF: "true"
+        # Source dist from the v2 frontend image, not the shared latest tag.
+        FRONTEND_IMAGE: bsu-visitor-frontend:v2
+    image: bsu-visitor-proxy:v2
+    container_name: bsu-visitor-v2-proxy
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    ports:
+      - "${V2_PROXY_PORT:-8081}:80"
+    environment:
+      # Empty DOMAIN → Caddy binds plain :80 by IP.
+      - DOMAIN=${V2_DOMAIN:-}
+
+volumes:
+  v2-data:
+  v2-uploads:

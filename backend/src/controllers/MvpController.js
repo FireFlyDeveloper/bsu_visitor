@@ -1,4 +1,6 @@
 import db from "../database/database.js";
+import crypto from "node:crypto";
+import VisitLog from "../models/VisitLog.js";
 import { createAccessToken, findVisitByAccessToken, getExitGraceMinutes, isWebPushConfigured, savePushSubscription, setExitGraceMinutes } from "../models/Mvp.js";
 
 export default class MvpController {
@@ -22,6 +24,30 @@ export default class MvpController {
       savePushSubscription({ userId: req.user.id, audience, subscription: req.body?.subscription });
       return res.status(201).json({ ok: true, delivery: isWebPushConfigured() ? "configured" : "not_configured", message: isWebPushConfigured() ? "Subscription saved for configured delivery" : "Subscription saved; in-app updates remain available until VAPID is configured" });
     } catch (error) { return res.status(400).json({ error: error.message }); }
+  }
+
+  /** Visitor opt-in: the opaque token is hashed against visit_logs columns. */
+  static subscribeVisitor(req, res) {
+    try {
+      const { token, subscription } = req.body || {};
+      if (typeof token !== "string" || token.length < 16 || token.length > 128) {
+        return res.status(404).json({ error: "Visit not found" });
+      }
+      const visit = VisitLog.findByAccessTokenHash(
+        crypto.createHash("sha256").update(token).digest("hex"),
+      );
+      if (!visit) return res.status(404).json({ error: "Visit not found" });
+      savePushSubscription({
+        audience: "visitor",
+        subscription,
+        visitLogId: visit.id,
+      });
+      return res.status(201).json({ ok: true, delivery: isWebPushConfigured() ? "configured" : "not_configured" });
+    } catch (error) { return res.status(400).json({ error: error.message }); }
+  }
+
+  static vapidPublicKey(_req, res) {
+    return res.json({ public_key: process.env.VAPID_PUBLIC_KEY || null });
   }
 
   static events(req, res) {

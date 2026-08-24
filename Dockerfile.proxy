@@ -10,6 +10,13 @@
 # dead-simple config. For Cloudflare-tunnel-fronted deployments where TLS
 # is terminated upstream, set TLS_OFF=true to skip the cert challenge.
 
+# Which frontend image to source the dist from. Declared in global scope so
+# the FROM below can interpolate it; a parallel deployment (e.g. v2 demo
+# stack) overrides this to its own frontend tag without touching :latest.
+ARG FRONTEND_IMAGE=bsu-visitor-frontend:latest
+
+FROM ${FRONTEND_IMAGE} AS frontend-dist
+
 FROM caddy:2-alpine
 ARG TLS_OFF=false
 
@@ -71,7 +78,7 @@ COPY <<EOF /etc/caddy/Caddyfile.no-tls
 EOF
 
 # Copy the frontend dist into the image.
-COPY --from=bsu-visitor-frontend:latest /app/dist /srv/frontend
+COPY --from=frontend-dist /app/dist /srv/frontend
 
 # Pick config based on build arg.
 RUN if [ "$TLS_OFF" = "true" ]; then \

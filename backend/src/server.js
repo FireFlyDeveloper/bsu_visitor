@@ -107,6 +107,11 @@ app.use("/api/public-home", publicHomeRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/multiset", multisetRoutes);
 app.use("/api/mvp", mvpRoutes);
+
+// Periodic sweep: completed-but-not-signed-out visits past their deadline
+// trigger security + visitor push notifications (deduplicated).
+import { startOverdueSweeper } from "./services/overdueSweeper.js";
+startOverdueSweeper();
 app.use("/api/roles", roleRoutes);
 // Health check
 app.get("/api/health", (req, res) => {

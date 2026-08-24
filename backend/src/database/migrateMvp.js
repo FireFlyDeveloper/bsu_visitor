@@ -28,6 +28,7 @@ db.prepare(`CREATE TABLE IF NOT EXISTS push_subscriptions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER,
   audience TEXT NOT NULL,
+  visit_log_id INTEGER,
   endpoint TEXT NOT NULL UNIQUE,
   subscription_json TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -47,6 +48,8 @@ db.prepare(`CREATE TABLE IF NOT EXISTS notification_events (
 addColumn("visit_logs", "exit_deadline", "DATETIME");
 addColumn("visit_logs", "overdue_acknowledged_at", "DATETIME");
 addColumn("notification_events", "dedup_key", "TEXT");
+// Visitor push: subscriptions tied to a specific visit log.
+addColumn("push_subscriptions", "visit_log_id", "INTEGER");
 
 // Repair legacy databases before enforcing notification idempotency. Duplicate
 // keys can exist in databases created before this index was introduced.

@@ -62,12 +62,13 @@ export function isWebPushConfigured() {
   return Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
 }
 
-export function savePushSubscription({ userId, audience, subscription }) {
+export function savePushSubscription({ userId, audience, subscription, visitLogId = null }) {
   const endpoint = subscription?.endpoint;
   if (!endpoint || typeof endpoint !== "string" || endpoint.length > 2048) throw new Error("A valid push endpoint is required");
-  db.prepare(`INSERT INTO push_subscriptions (user_id, audience, endpoint, subscription_json)
-    VALUES (?, ?, ?, ?)
+  db.prepare(`INSERT INTO push_subscriptions (user_id, audience, visit_log_id, endpoint, subscription_json)
+    VALUES (?, ?, ?, ?, ?)
     ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id, audience=excluded.audience,
+    visit_log_id=excluded.visit_log_id,
     subscription_json=excluded.subscription_json, last_seen_at=CURRENT_TIMESTAMP`)
-    .run(userId || null, audience, endpoint, JSON.stringify(subscription));
+    .run(userId || null, audience, visitLogId, endpoint, JSON.stringify(subscription));
 }

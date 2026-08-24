@@ -1,5 +1,11 @@
 # BSU Visitor — Master System Blueprint
 
+> **[SUPERSEDED 2026-08-24]** The canonical, codebase-current blueprint now lives in AFFiNE:
+> doc `BSU_VISITOR_MASTER_SYSTEM_BLUEPRINT` (id `9eKmhVYjG1`), linked under
+> *BSU Visitor — Requirements & Architecture*.
+> http://homelab:3010/workspace/e2832e2f-1e21-49ea-8178-e44f2bd4637e/9eKmhVYjG1
+> This file is retained as historical reference only and no longer receives updates.
+
 > Consolidated system direction, architecture, workflows, UI rules, security requirements, database concepts, API boundaries, responsive design, QA evidence, and renovation scope.
 >
 > **Status:** Approved design/architecture blueprint for the complete renovation.

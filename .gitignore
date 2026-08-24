@@ -1,8 +1,11 @@
 node_modules/
 *.db
 .env
+.env.v2
 backend/uploads/
 .DS_Store
 dist/
 .vite/
 .certs/
+test-results/
+.hermes/

@@ -45,6 +45,15 @@ export const useUserStore = defineStore("user", {
         });
         const data = await handleResponse(response);
         this.currentUser = data.user;
+        // Push notifications: staff (office) and security subscribe after
+        // login. Fire-and-forget — a denial must not block sign-in.
+        import("@/utils/push")
+          .then(({ pushSupported, subscribeStaff }) => {
+            const audience =
+              data.user?.role_id === 2 ? "security" : "office";
+            if (pushSupported()) subscribeStaff(audience).catch(() => {});
+          })
+          .catch(() => {});
         return data;
       } catch (error) {
         this.error = error.message;
