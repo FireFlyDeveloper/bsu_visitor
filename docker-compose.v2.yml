@@ -36,7 +36,7 @@ services:
       MULTISET_CLIENT_SECRET: ${MULTISET_CLIENT_SECRET:-}
       MULTISET_MAP_CODE: ${MULTISET_MAP_CODE:-MAP_GCEL3WD6ACQL}
       DATABASE_PATH: /app/data/database.db
-      CLIENT_URL: ${V2_CLIENT_URL:-http://localhost:8081,http://homelab.local:8081}
+      CLIENT_URL: ${V2_CLIENT_URL:-https://visitor.ffly.site,http://localhost:8081,http://homelab.local:8081}
     volumes:
       - v2-data:/app/data
       - v2-uploads:/app/uploads
