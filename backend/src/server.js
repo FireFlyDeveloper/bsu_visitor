@@ -136,5 +136,6 @@ const PORT = process.env.PORT || 8765;
 const HOST = process.env.HOST;
 
 app.listen(PORT, HOST, () => {
-  console.log(`Server running on http://${HOST}:${PORT}`);
+  // HOST may be unset (Node then binds all interfaces) — don't print "undefined".
+  console.log(`Server running on http://${HOST || "0.0.0.0"}:${PORT}`);
 });
