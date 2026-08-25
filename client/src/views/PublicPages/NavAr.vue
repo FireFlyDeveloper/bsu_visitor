@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="overlayRootEl"
     class="fixed inset-0 z-50 overflow-hidden text-white"
     :class="started || xrActive ? 'bg-transparent' : 'bg-[#0b0b0d]'"
   >
@@ -218,6 +219,13 @@ const selectedDestination = computed(() =>
 );
 
 const canvasEl = ref(null);
+
+// Dedicated WebXR DOM-overlay root. Must be this component's own subtree so
+// only the AR HUD (top bar + bottom status) is composited over the camera
+// during an immersive-ar session. Using document.body would composite the
+// whole page — including the PublicShell header and public nav bar — on top
+// of the camera feed.
+const overlayRootEl = ref(null);
 
 const started = ref(false);
 const starting = ref(false);
@@ -715,7 +723,7 @@ async function setupMultisetVps() {
 
   multisetSession = new XRSessionManager(renderer.getContext(), {
     client: multisetClient,
-    overlayRoot: document.body,
+    overlayRoot: overlayRootEl.value || document.body,
     autoLocalize: true,
     relocalization: true,
     confidenceCheck: true,
