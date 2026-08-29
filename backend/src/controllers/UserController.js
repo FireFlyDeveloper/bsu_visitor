@@ -40,10 +40,18 @@ class UserController {
         { expiresIn: JWT_EXPIRY },
       );
 
-      // Set httpOnly cookie
+      // Set httpOnly cookie. Secure is set ONLY when the request actually
+      // travelled over HTTPS (direct TLS or a terminating proxy that sets
+      // X-Forwarded-Proto). Plain-HTTP deployments (LAN kiosks, HTTP demo
+      // stacks) must not mark the cookie Secure or the browser silently
+      // drops it and "login never sticks".
       res.cookie("authToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
+        secure:
+          req.secure ||
+          String(req.get("x-forwarded-proto") || "")
+            .split(",")[0]
+            .trim() === "https",
         sameSite: "strict",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
@@ -66,9 +74,15 @@ class UserController {
 
   static logout(req, res) {
     try {
+      // Mirror the login cookie flags exactly so the deletion matches
+      // (a Secure clear on a non-Secure cookie would be silently ignored).
       res.clearCookie("authToken", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure:
+          req.secure ||
+          String(req.get("x-forwarded-proto") || "")
+            .split(",")[0]
+            .trim() === "https",
         sameSite: "strict",
       });
 

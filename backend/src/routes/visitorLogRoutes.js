@@ -11,7 +11,9 @@ const router = express.Router();
 
 router.use(authMiddleware, activityLogger);
 
-router.get("/", roleMiddleware(["admin", "staff"]), VisitorLogController.getAll);
+// Read-only list is also used by the security kiosk's live activity feed;
+// guards already see the same visit data on their pending/sign-out screens.
+router.get("/", roleMiddleware(["admin", "staff", "security"]), VisitorLogController.getAll);
 // Static route must be declared BEFORE the `/:id` parameter route.
 router.get(
   "/overdue",

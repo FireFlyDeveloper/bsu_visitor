@@ -191,6 +191,33 @@
               <p v-if="leftAt" class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
                 Signed out at {{ formatServerDateTime(leftAt) }}. Thank you for visiting!
               </p>
+
+              <!-- AR navigation — only when the office is a mapped AR destination -->
+              <router-link
+                v-if="arDestination"
+                :to="{
+                  path: '/navigate',
+                  query: { to: arDestination.id, name: office?.office_name },
+                }"
+                class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[var(--bsu-red)] bg-white px-5 py-3.5 text-sm font-bold text-[var(--bsu-red)] shadow-lg transition hover:bg-[var(--bsu-red-soft)]"
+              >
+                <svg
+                  class="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  stroke-width="2.5"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3 11l19-9-9 19-2-8-8-2z"
+                  />
+                </svg>
+                Navigate with AR
+                <span class="font-semibold">{{ arDestination.name }} →</span>
+              </router-link>
             </template>
           </div>
         </div>
@@ -252,6 +279,7 @@ import { Search } from "@lucide/vue";
 import { formatServerTime, formatServerDateTime, parseServerDate } from "@/utils/dateTime";
 import { getVisitorTokens, saveVisitorToken } from "@/utils/visitorToken";
 import { pushSupported, subscribeVisitorVisits } from "@/utils/push";
+import { findArDestination } from "@/config/arNavigation";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 const route = useRoute();
@@ -291,6 +319,7 @@ async function refreshSummaries() {
           data.office?.office_name ||
           visit.office ||
           "";
+        visit.reference = data.reference_number || visit.reference || "";
       } catch (_) {
         /* keep last known summary */
       }
@@ -424,6 +453,10 @@ function closeModal() {
 const referenceNumber = computed(() => status.value.reference_number || "");
 const office = computed(() => status.value.office || null);
 const queuePosition = computed(() => status.value.queue_position || null);
+const arDestination = computed(() => {
+  const name = office.value?.office_name;
+  return name ? findArDestination({ name }) || null : null;
+});
 const exitDeadline = computed(() =>
   parseServerDate(status.value.exit_deadline),
 );

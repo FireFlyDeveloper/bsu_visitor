@@ -256,6 +256,10 @@
     <KioskSuccessModal
       :show="showSuccess"
       :message="successMessage"
+      :qr-value="successQrValue"
+      :office-name="successOfficeName"
+      :reference-number="successReferenceNumber"
+      :visitor-name="successVisitorName"
       @close="closeSuccess"
       @register-another="registerAnother"
     />
@@ -297,6 +301,10 @@ const error = ref("");
 
 const showSuccess = ref(false);
 const successMessage = ref("");
+const successQrValue = ref("");
+const successOfficeName = ref("");
+const successReferenceNumber = ref("");
+const successVisitorName = ref("");
 
 const overdue = ref([]);
 const overdueCount = computed(() => overdue.value.length);
@@ -478,9 +486,14 @@ async function onSubmit() {
     const office = offices.value.find(
       (o) => Number(o.id) === Number(result.office_id),
     );
-    successMessage.value = `${result.visitor.fullname} queued for ${
-      office?.office_name || "office"
-    }.`;
+    const officeName = office?.office_name || "office";
+    successMessage.value = `${result.visitor.fullname} queued for ${officeName}.`;
+    successQrValue.value = `${
+      import.meta.env.VITE_PUBLIC_ORIGIN || window.location.origin
+    }/status?token=${result.token}`;
+    successOfficeName.value = officeName;
+    successReferenceNumber.value = result.reference_number || "";
+    successVisitorName.value = result.visitor.fullname || "";
     showSuccess.value = true;
     toast.success(`Logged ${result.visitor.fullname}`);
     await pollAll();
@@ -493,6 +506,10 @@ async function onSubmit() {
 
 function closeSuccess() {
   showSuccess.value = false;
+  successQrValue.value = "";
+  successOfficeName.value = "";
+  successReferenceNumber.value = "";
+  successVisitorName.value = "";
   resetForm();
 }
 function registerAnother() {

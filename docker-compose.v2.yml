@@ -55,6 +55,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_BASE: /api
+        VITE_PUBLIC_ORIGIN: ${V2_PUBLIC_ORIGIN:-}
     image: bsu-visitor-frontend:v2
     container_name: bsu-visitor-v2-frontend
     restart: unless-stopped

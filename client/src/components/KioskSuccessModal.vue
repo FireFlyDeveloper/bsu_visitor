@@ -8,17 +8,17 @@
       >
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
         <div
-          class="relative w-full max-w-md rounded-3xl border border-emerald-100 bg-white shadow-[0_32px_96px_rgba(15,23,42,0.18)] overflow-hidden"
+          class="relative w-full max-w-md rounded-3xl border border-[var(--bsu-line)] bg-white shadow-[0_32px_96px_rgba(15,23,42,0.18)] overflow-hidden"
         >
           <div
-            class="h-1.5 w-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+            class="h-1.5 w-full bg-gradient-to-r from-[var(--bsu-red-deep)] to-[var(--bsu-red)]"
           />
           <div class="p-8 text-center">
             <div
-              class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50"
+              class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bsu-red-soft)] ring-8 ring-[var(--bsu-red-soft)]"
             >
               <svg
-                class="h-8 w-8 text-emerald-600"
+                class="h-8 w-8 text-[var(--bsu-red)]"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke-width="2"
@@ -32,37 +32,57 @@
               </svg>
             </div>
             <p
-              class="mt-5 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700"
+              class="mt-5 text-sm font-semibold uppercase tracking-[0.24em] text-[var(--bsu-red)]"
             >
               Success
             </p>
-            <h2 class="mt-2 text-xl font-semibold text-slate-950">
-              Visitor logged
+            <h2 class="font-display mt-2 text-xl font-semibold text-slate-950">
+              {{ visitorName || "Visitor" }} logged
             </h2>
-            <p class="mt-2 text-sm leading-6 text-slate-500">
-              {{ message || "Visitor has been queued for the destination office." }}
+            <p
+              v-if="message"
+              class="mt-2 text-sm leading-6 text-slate-500"
+            >
+              {{ message }}
             </p>
 
-            <!-- QR placeholder (to be implemented later) -->
+            <!-- QR handoff slot -->
             <div
-              v-if="showQrSlot"
-              class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-xs text-slate-400"
+              v-if="showQrSlot && qrValue"
+              class="mt-6 rounded-2xl border border-[var(--bsu-line)] bg-[var(--bsu-paper-2)] p-6"
             >
-              QR slot — reserved for navigation QR
+              <VisitorQr
+                :value="qrValue"
+                alt="Visitor navigation QR code"
+              />
+              <p
+                class="font-display mt-4 text-base font-bold tabular text-slate-950"
+              >
+                {{ officeName || "Office" }}
+              </p>
+              <p
+                v-if="referenceNumber"
+                class="mt-1 font-mono text-sm tabular text-[var(--bsu-ink-2)]"
+              >
+                Reference {{ referenceNumber }}
+              </p>
+              <p class="mt-1 text-xs text-[var(--bsu-ink-3)]">
+                Scan with your phone to save this visit
+              </p>
             </div>
 
             <div class="mt-6 flex gap-3">
               <button
                 type="button"
                 @click="$emit('register-another')"
-                class="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                class="flex-1 rounded-3xl border border-[var(--bsu-line)] bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Register another
               </button>
               <button
                 type="button"
                 @click="$emit('close')"
-                class="flex-1 rounded-3xl bg-red-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+                class="flex-1 rounded-3xl bg-[var(--bsu-red)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--bsu-red-deep)]"
               >
                 Done
               </button>
@@ -75,10 +95,16 @@
 </template>
 
 <script setup>
+import VisitorQr from "@/components/VisitorQr.vue";
+
 defineProps({
   show: Boolean,
   message: String,
   showQrSlot: { type: Boolean, default: true },
+  qrValue: { type: String, default: "" },
+  officeName: { type: String, default: "" },
+  referenceNumber: { type: String, default: "" },
+  visitorName: { type: String, default: "" },
 });
 defineEmits(["close", "register-another"]);
 </script>
