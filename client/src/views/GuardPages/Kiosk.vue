@@ -218,28 +218,42 @@
                 v-for="(log, i) in recentActivity"
                 :key="log.id"
                 :class="stagger(i)"
-                class="flex items-center gap-3 rounded-xl border border-[var(--line)] bg-white p-2.5"
+                class="rounded-xl border border-[var(--line)] bg-white p-1"
               >
-                <img
-                  v-if="log.visitor_img"
-                  :src="visitorImageUrl(log.visitor_img)"
-                  class="h-9 w-9 rounded-full object-cover"
-                />
-                <div
-                  v-else
-                  class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--paper-2)] text-xs font-semibold text-[var(--ink-2)]"
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-3 rounded-lg p-2 text-left transition hover:bg-[var(--paper-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bsu-red)]"
+                  title="Show visitor QR"
+                  @click="openQrModal(log)"
                 >
-                  {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
-                </div>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm font-semibold">{{ log.visitor_name }}</p>
-                  <p class="truncate text-xs text-[var(--ink-3)]">
-                    {{ log.office_name }} · {{ log.purpose || "—" }}
-                  </p>
-                </div>
-                <span class="shrink-0 font-mono text-[0.6875rem] tabular text-[var(--ink-3)]">
-                  {{ formatTime(log.time_in) }}
-                </span>
+                  <img
+                    v-if="log.visitor_img"
+                    :src="visitorImageUrl(log.visitor_img)"
+                    class="h-9 w-9 rounded-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--paper-2)] text-xs font-semibold text-[var(--ink-2)]"
+                  >
+                    {{ (log.visitor_name || "?").charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold">{{ log.visitor_name }}</p>
+                    <p class="truncate text-xs text-[var(--ink-3)]">
+                      {{ log.office_name }} · {{ log.purpose || "—" }}
+                    </p>
+                  </div>
+                  <span class="shrink-0 font-mono text-[0.6875rem] tabular text-[var(--ink-3)]">
+                    {{ formatTime(log.time_in) }}
+                  </span>
+                  <span
+                    v-if="log.qrToken"
+                    class="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--bsu-red)]/30 bg-[var(--bsu-red-soft)] px-2 py-1 text-[0.625rem] font-bold uppercase tracking-wide text-[var(--bsu-red)]"
+                  >
+                    <QrCode class="h-3 w-3" aria-hidden="true" />
+                    QR
+                  </span>
+                </button>
               </li>
             </ul>
             <EmptyState
@@ -263,6 +277,12 @@
       @close="closeSuccess"
       @register-another="registerAnother"
     />
+
+    <KioskQrModal
+      :show="showQrModal"
+      :entry="qrModalEntry"
+      @close="closeQrModal"
+    />
   </div>
 </template>
 
@@ -275,8 +295,11 @@ import { useSecurityAlarm } from "@/composables/useSecurityAlarm";
 import AppButton from "@/components/AppButton.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import KioskSuccessModal from "@/components/KioskSuccessModal.vue";
+import KioskQrModal from "@/components/KioskQrModal.vue";
+import { QrCode } from "@lucide/vue";
 import { stagger } from "@/composables/useStagger";
 import { visitorImageUrl } from "@/utils/visitorImageUrl";
+import { cacheKioskQr, getCachedKioskQr, attachCachedQrs } from "@/utils/guardQrCache";
 import { formatServerTime } from "@/utils/dateTime";
 
 const officeStore = useOfficeStore();
@@ -305,6 +328,9 @@ const successQrValue = ref("");
 const successOfficeName = ref("");
 const successReferenceNumber = ref("");
 const successVisitorName = ref("");
+
+const showQrModal = ref(false);
+const qrModalEntry = ref(null);
 
 const overdue = ref([]);
 const overdueCount = computed(() => overdue.value.length);
@@ -494,6 +520,16 @@ async function onSubmit() {
     successOfficeName.value = officeName;
     successReferenceNumber.value = result.reference_number || "";
     successVisitorName.value = result.visitor.fullname || "";
+    // Keep the raw token on this kiosk device so the recent-registrations
+    // feed can re-show the visitor's QR after the success modal closes.
+    // (Backend stores only the hash — this cache is the only replay source.)
+    cacheKioskQr({
+      logId: result.logId,
+      token: result.token,
+      office: officeName,
+      reference: result.reference_number || "",
+      name: result.visitor.fullname || "",
+    });
     showSuccess.value = true;
     toast.success(`Logged ${result.visitor.fullname}`);
     await pollAll();
@@ -516,13 +552,31 @@ function registerAnother() {
   closeSuccess();
 }
 
+/** Open the QR re-view modal for a recent kiosk registration. */
+function openQrModal(log) {
+  if (!log) return;
+  const cached = getCachedKioskQr(log.id);
+  qrModalEntry.value = {
+    ...log,
+    qrToken: log.qrToken || cached?.token || "",
+    reference: log.reference_number || cached?.reference || "",
+    office: log.office_name || cached?.office || "",
+    name: log.visitor_name || cached?.name || "",
+  };
+  showQrModal.value = true;
+}
+function closeQrModal() {
+  showQrModal.value = false;
+  qrModalEntry.value = null;
+}
+
 async function pollAll() {
   const [overdueRes, activityRes] = await Promise.all([
     visitorLogStore.fetchOverdue(),
     visitorLogStore.fetchVisitLogs({ perPage: 8, page: 1 }),
   ]);
   overdue.value = overdueRes.overdue || [];
-  recentActivity.value = (activityRes.logs || []).slice(0, 8);
+  recentActivity.value = attachCachedQrs(activityRes.logs || []).slice(0, 8);
   // Tell the global alarm to re-evaluate the audio state based on
   // the latest count. The composable owns the Audio element.
   await refreshOverdue();
